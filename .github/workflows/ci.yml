@@ -8,6 +8,22 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: quizforge
+          POSTGRES_PASSWORD: quizforge_dev_only
+          POSTGRES_DB: quizforge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -16,9 +32,22 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @quizforge/api prisma:generate
+
+      - name: Setup Database & Generate Prisma Client
+        env:
+          DATABASE_URL: postgresql://quizforge:quizforge_dev_only@localhost:5432/quizforge?schema=public
+        run: |
+          pnpm --filter @quizforge/api prisma:generate
+          pnpm --filter @quizforge/api prisma:migrate:deploy
+          pnpm --filter @quizforge/api prisma:seed
+
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
-      - run: pnpm test
+
+      - name: Run Tests
+        env:
+          DATABASE_URL: postgresql://quizforge:quizforge_dev_only@localhost:5432/quizforge?schema=public
+        run: pnpm test
+
       - run: pnpm build
