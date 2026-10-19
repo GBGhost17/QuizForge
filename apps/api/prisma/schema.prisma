@@ -1,0 +1,12 @@
+// S01: connection foundation only. Domain models arrive in S02 (database foundation).
+// Migration plan: S02 adds the initial schema via `pnpm --filter @quizforge/api prisma:migrate:dev`.
+// Never run destructive migrations against shared/production databases without human approval.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

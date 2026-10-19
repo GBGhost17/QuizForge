@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-quizforge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-quizforge_dev_only}
+      POSTGRES_DB: ${POSTGRES_DB:-quizforge}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - quizforge_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-quizforge} -d ${POSTGRES_DB:-quizforge}']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  quizforge_pgdata:
