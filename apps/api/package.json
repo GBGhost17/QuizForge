@@ -11,6 +11,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:seed": "prisma db seed",
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
@@ -43,7 +44,7 @@
       "<rootDir>/src",
       "<rootDir>/test"
     ],
-    "testRegex": ".*\\.(spec|e2e-spec)\\.ts$",
+    "testRegex": ".*\\.(spec|e2e-spec|integration-spec)\\.ts$",
     "moduleFileExtensions": [
       "js",
       "json",
@@ -58,5 +59,8 @@
       ]
     },
     "testEnvironment": "node"
+  },
+  "prisma": {
+    "seed": "node --experimental-strip-types prisma/seed.ts"
   }
 }
