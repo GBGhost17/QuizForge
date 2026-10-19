@@ -1,6 +1,5 @@
-// S01: connection foundation only. Domain models arrive in S02 (database foundation).
-// Migration plan: S02 adds the initial schema via `pnpm --filter @quizforge/api prisma:migrate:dev`.
-// Never run destructive migrations against shared/production databases without human approval.
+// Prisma Schema for QuizForge
+// Stage S02: Database Foundation
 
 generator client {
   provider = "prisma-client-js"
@@ -9,4 +8,406 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+  ESSAY
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum TestMode {
+  ASSIGNMENT
+  PRACTICE
+  LIVE
+}
+
+enum TestStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  ARCHIVED
+}
+
+enum ResultReleaseMode {
+  ON_FINALIZATION
+  AFTER_ALL_GRADED
+  MANUAL
+}
+
+enum SessionStatus {
+  UPCOMING
+  ACTIVE
+  ENDED
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_GRADED
+  PENDING_REVIEW
+  FINALIZED
+  RELEASED
+}
+
+enum ImportStatus {
+  PENDING
+  PARSED
+  COMMITTED
+  FAILED
+}
+
+// ---------------------------------------------------------
+// AUTH & USERS
+// ---------------------------------------------------------
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  passwordHash    String
+  name            String
+  role            UserRole @default(USER)
+  avatarUrl       String?
+  isEmailVerified Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  questionBanks       QuestionBank[]
+  tests               Test[]
+  attempts            Attempt[]
+  gradesGiven         Grade[]              @relation("Grader")
+  gradingAudits       GradingAudit[]       @relation("GradingAuditor")
+  importJobs          ImportJob[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// ---------------------------------------------------------
+// QUESTION BANK & QUESTIONS
+// ---------------------------------------------------------
+
+model QuestionBank {
+  id          String   @id @default(uuid())
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title       String
+  description String?  @db.Text
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  questions  Question[]
+  importJobs ImportJob[]
+
+  @@index([ownerId])
+  @@map("question_banks")
+}
+
+model Question {
+  id            String       @id @default(uuid())
+  bankId        String
+  bank          QuestionBank @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  type          QuestionType
+  prompt        String       @db.Text
+  explanation   String?      @db.Text
+  topic         String?
+  tags          String[]     @default([])
+  difficulty    Difficulty   @default(MEDIUM)
+  defaultPoints Float        @default(1.0)
+  rubric        Json?
+  isArchived    Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  options   QuestionOption[]
+  snapshots TestQuestionSnapshot[]
+
+  @@index([bankId])
+  @@index([type])
+  @@index([topic])
+  @@map("questions")
+}
+
+model QuestionOption {
+  id          String   @id @default(uuid())
+  questionId  String
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text        String   @db.Text
+  isCorrect   Boolean  @default(false)
+  explanation String?  @db.Text
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([questionId])
+  @@map("question_options")
+}
+
+// ---------------------------------------------------------
+// TESTS & SNAPSHOTS (IMMUTABLE ASSESSMENTS)
+// ---------------------------------------------------------
+
+model Test {
+  id           String     @id @default(uuid())
+  authorId     String
+  author       User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?    @db.Text
+  instructions String?    @db.Text
+  mode         TestMode   @default(ASSIGNMENT)
+  status       TestStatus @default(DRAFT)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  versions TestVersion[]
+
+  @@index([authorId])
+  @@map("tests")
+}
+
+model TestVersion {
+  id               String            @id @default(uuid())
+  testId           String
+  test             Test              @relation(fields: [testId], references: [id], onDelete: Cascade)
+  versionNumber    Int               @default(1)
+  title            String
+  description      String?           @db.Text
+  instructions     String?           @db.Text
+  timeLimitMinutes Int?
+  maxAttempts      Int               @default(1)
+  shuffleQuestions Boolean           @default(false)
+  shuffleOptions   Boolean           @default(false)
+  releaseMode      ResultReleaseMode @default(ON_FINALIZATION)
+  passScore        Float?
+  totalPoints      Float             @default(0.0)
+  isPublished      Boolean           @default(false)
+  publishedAt      DateTime?
+  createdAt        DateTime          @default(now())
+
+  questionSnapshots TestQuestionSnapshot[]
+  sessions          TestSession[]
+  attempts          Attempt[]
+
+  @@unique([testId, versionNumber])
+  @@index([testId])
+  @@map("test_versions")
+}
+
+model TestQuestionSnapshot {
+  id          String       @id @default(uuid())
+  versionId   String
+  version     TestVersion  @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  questionId  String?
+  question    Question?    @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  order       Int
+  points      Float        @default(1.0)
+  type        QuestionType
+  prompt      String       @db.Text
+  explanation String?      @db.Text
+  options     Json
+  rubric      Json?
+  createdAt   DateTime     @default(now())
+
+  assignedOrders AttemptQuestionOrder[]
+  answers        Answer[]
+
+  @@unique([versionId, order])
+  @@index([versionId])
+  @@map("test_question_snapshots")
+}
+
+// ---------------------------------------------------------
+// SESSIONS & ATTEMPTS
+// ---------------------------------------------------------
+
+model TestSession {
+  id        String        @id @default(uuid())
+  versionId String
+  version   TestVersion   @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  joinCode  String?       @unique
+  title     String?
+  status    SessionStatus @default(ACTIVE)
+  startsAt  DateTime?
+  endsAt    DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  attempts Attempt[]
+
+  @@index([versionId])
+  @@index([joinCode])
+  @@map("test_sessions")
+}
+
+model Attempt {
+  id            String        @id @default(uuid())
+  versionId     String
+  version       TestVersion   @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  sessionId     String?
+  session       TestSession?  @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attemptNumber Int           @default(1)
+  status        AttemptStatus @default(IN_PROGRESS)
+  score         Float?
+  totalPoints   Float         @default(0.0)
+  startedAt     DateTime      @default(now())
+  submittedAt   DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  questionOrders AttemptQuestionOrder[]
+  answers        Answer[]
+
+  @@unique([versionId, userId, attemptNumber])
+  @@index([userId])
+  @@index([versionId])
+  @@index([sessionId])
+  @@map("attempts")
+}
+
+model AttemptQuestionOrder {
+  id                String               @id @default(uuid())
+  attemptId         String
+  attempt           Attempt              @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  snapshotId        String
+  snapshot          TestQuestionSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  assignedOrder     Int
+  shuffledOptionIds Json?
+  createdAt         DateTime             @default(now())
+
+  @@unique([attemptId, snapshotId])
+  @@unique([attemptId, assignedOrder])
+  @@index([attemptId])
+  @@map("attempt_question_orders")
+}
+
+model Answer {
+  id                String               @id @default(uuid())
+  attemptId         String
+  attempt           Attempt              @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  snapshotId        String
+  snapshot          TestQuestionSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  selectedOptionIds Json?
+  textAnswer        String?              @db.Text
+  isAutoGraded      Boolean              @default(false)
+  score             Float?
+  feedback          String?              @db.Text
+  submittedAt       DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  grade         Grade?
+  gradingAudits GradingAudit[]
+
+  @@unique([attemptId, snapshotId])
+  @@index([attemptId])
+  @@map("answers")
+}
+
+// ---------------------------------------------------------
+// GRADING & AUDIT
+// ---------------------------------------------------------
+
+model Grade {
+  id         String   @id @default(uuid())
+  answerId   String   @unique
+  answer     Answer   @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  graderId   String?
+  grader     User?    @relation("Grader", fields: [graderId], references: [id], onDelete: SetNull)
+  score      Float
+  maxScore   Float
+  feedback   String?  @db.Text
+  isOverride Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([graderId])
+  @@map("grades")
+}
+
+model GradingAudit {
+  id               String   @id @default(uuid())
+  answerId         String
+  answer           Answer   @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  graderId         String?
+  grader           User?    @relation("GradingAuditor", fields: [graderId], references: [id], onDelete: SetNull)
+  previousScore    Float?
+  newScore         Float
+  previousFeedback String?  @db.Text
+  newFeedback      String?  @db.Text
+  reason           String?  @db.Text
+  createdAt        DateTime @default(now())
+
+  @@index([answerId])
+  @@index([graderId])
+  @@map("grading_audits")
+}
+
+// ---------------------------------------------------------
+// IMPORT JOBS
+// ---------------------------------------------------------
+
+model ImportJob {
+  id         String       @id @default(uuid())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankId     String?
+  bank       QuestionBank? @relation(fields: [bankId], references: [id], onDelete: SetNull)
+  fileName   String
+  status     ImportStatus @default(PENDING)
+  rawContent String?      @db.Text
+  summary    Json?
+  errors     Json?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([bankId])
+  @@map("import_jobs")
 }
