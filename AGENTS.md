@@ -1,6 +1,6 @@
 # Instructions for AI Coding Agents
 
-Read `README.md`, `docs/PRODUCT_SPEC.md`, and `docs/ROADMAP.md` before modifying the repository. Apply all relevant files under `.agents/rules/`; use task checklists in `.agents/skills/`[cite: 1, 2].
+Read `README.md`, `docs/PRODUCT_SPEC.md`, and `docs/ROADMAP.md` before modifying the repository. Apply all relevant files under `.agents/rules/`; use task checklists in `.agents/skills/`.
 
 ## Operating Protocol
 1. Inspect repository and existing conventions before proposing edits.
