@@ -1,8 +1,8 @@
 # QuizForge — Nhật Ký Tiến Độ & Kế Hoạch Triển Khai (Progress Tracker)
 
 > Cập nhật lần cuối: 2026-11-06  
-> Nhánh hiện tại: `feat/S04-ui-shell`  
-> Giai đoạn hoạt động: **Stage S04 — UI shell and design system (Hoàn thành / Ready for Review)**
+> Nhánh hiện tại: `main` (Stage S04 đã hoàn thành và merge vào main)  
+> Giai đoạn hoạt động: **Stage S04 — UI shell and design system (HOÀN THÀNH & ĐÃ MERGE)**
 
 ---
 
