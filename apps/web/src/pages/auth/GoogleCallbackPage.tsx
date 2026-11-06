@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuthStore, setStoredRefreshToken } from '../../stores/auth.store';
+import { useAuthStore } from '../../stores/auth.store';
 import { useAuth } from '../../hooks/useAuth';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Alert, AlertDescription } from '../../components/ui/alert';
@@ -10,28 +10,45 @@ export function GoogleCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const setAccessToken = useAuthStore((state) => state.setAccessToken);
-  const { refetchUser } = useAuth();
+  const { refetchUser, refreshSession } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const processedRef = useRef(false);
 
   useEffect(() => {
+    if (processedRef.current) return;
+    processedRef.current = true;
+
     const accessToken = searchParams.get('accessToken');
-    const refreshToken = searchParams.get('refreshToken');
     const oauthError = searchParams.get('error');
 
-    if (oauthError || !accessToken || !refreshToken) {
+    if (oauthError) {
       setError('Xác thực tài khoản Google không thành công. Vui lòng thử lại.');
       return;
     }
 
-    // Save tokens securely
-    setAccessToken(accessToken);
-    setStoredRefreshToken(refreshToken);
+    const completeAuth = async () => {
+      try {
+        if (accessToken) {
+          // Access token received via redirect, save strictly in memory
+          setAccessToken(accessToken);
+          await refetchUser();
+          navigate('/', { replace: true });
+        } else {
+          // Fallback: Exchange HttpOnly cookie for session access token
+          const result = await refreshSession();
+          if (result) {
+            navigate('/', { replace: true });
+          } else {
+            setError('Không thể hoàn tất phiên xác thực Google. Vui lòng đăng nhập lại.');
+          }
+        }
+      } catch {
+        setError('Xác thực tài khoản Google không thành công. Vui lòng thử lại.');
+      }
+    };
 
-    // Refetch user profile and navigate home
-    void refetchUser().then(() => {
-      navigate('/', { replace: true });
-    });
-  }, [searchParams, setAccessToken, refetchUser, navigate]);
+    void completeAuth();
+  }, [searchParams, setAccessToken, refetchUser, refreshSession, navigate]);
 
   if (error) {
     return (

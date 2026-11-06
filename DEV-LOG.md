@@ -45,3 +45,19 @@ This file tracks incremental feature implementations, stage progressions (S00–
   - `pnpm --filter @quizforge/api test src/` — 43/43 unit tests PASSED.
   - Total: 100 tests passing cleanly across workspace.
 - **Next Step**: Review and merge Google OAuth vertical slice into main branch, then proceed to Stage S05 (Question Bank CRUD).
+
+### [2026-11-06] Stage S03/S04 - Auth Hardening: HttpOnly Cookie Storage & URL Token Protection
+- **Branch**: `feat/S05-question-bank-crud`
+- **Changes**:
+  - `apps/api`: Integrated `cookie-parser`, configured `refreshToken` strictly via `HttpOnly`, `SameSite=Lax`, secure cookie on login, register, refresh, and Google OAuth callback.
+  - `apps/api`: Removed `refreshToken` query parameter exposure from Google OAuth redirect URL. Removed development `resetToken` leak from forgot password response.
+  - `apps/web`: Completely eliminated `localStorage` persistence for auth tokens (`quizforge_refresh_token`). Kept `accessToken` strictly in-memory (Zustand state).
+  - `apps/web`: Configured `apiClient` with `withCredentials: true` and automatic cookie-based token rotation on 401. Updated `GoogleCallbackPage` to prevent infinite re-render loops and safely exchange session state.
+  - Updated all unit and integration tests across `apps/api` and `apps/web` to validate HttpOnly cookie propagation and in-memory token lifecycle.
+- **Validation**:
+  - `pnpm format:check` — PASSED.
+  - `pnpm lint` — PASSED (0 errors, 0 warnings).
+  - `pnpm typecheck` — PASSED across all workspace packages and apps.
+  - Unit tests: 43/43 PASSED in `apps/api`, 42/42 PASSED in `apps/web`.
+  - `pnpm build` — PASSED across all apps.
+- **Next Step**: Proceed with Step 1 of Stage S05 (Question Bank & Question CRUD: contracts and Zod schemas in `packages/shared-types` and `packages/validation`).

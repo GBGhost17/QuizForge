@@ -1,5 +1,5 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { getStoredRefreshToken, setStoredRefreshToken, useAuthStore } from '../stores/auth.store';
+import { useAuthStore } from '../stores/auth.store';
 import type { AuthResponse } from '@quizforge/shared-types';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api/v1';
@@ -10,6 +10,7 @@ export const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 15000,
+  withCredentials: true,
 });
 
 // -------------------------------------------------------------
@@ -85,25 +86,18 @@ apiClient.interceptors.response.use(
     originalRequest._retry = true;
     isRefreshing = true;
 
-    const currentRefreshToken = getStoredRefreshToken();
-
-    if (!currentRefreshToken) {
-      isRefreshing = false;
-      useAuthStore.getState().clearAuth();
-      return Promise.reject(error);
-    }
-
     try {
-      // Call refresh endpoint with raw axios instance to prevent interceptor loop
-      const response = await axios.post<AuthResponse>(`${API_BASE_URL}/auth/refresh`, {
-        refreshToken: currentRefreshToken,
-      });
+      // Call refresh endpoint with HttpOnly cookie automatically sent via credentials
+      const response = await axios.post<AuthResponse>(
+        `${API_BASE_URL}/auth/refresh`,
+        {},
+        { withCredentials: true },
+      );
 
-      const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
+      const { accessToken: newAccessToken } = response.data;
 
-      // Update state with newly rotated tokens
+      // Update state with newly rotated token strictly in memory
       useAuthStore.getState().setAccessToken(newAccessToken);
-      setStoredRefreshToken(newRefreshToken);
 
       processQueue(null, newAccessToken);
 
@@ -115,8 +109,16 @@ apiClient.interceptors.response.use(
       useAuthStore.getState().clearAuth();
 
       // Redirect to login page in browser environment
-      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      if (
+        typeof window !== 'undefined' &&
+        window.location?.pathname &&
+        window.location.pathname !== '/login'
+      ) {
+        try {
+          window.location.href = '/login';
+        } catch {
+          // jsdom navigation guard in test environments
+        }
       }
 
       return Promise.reject(refreshError);

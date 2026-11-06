@@ -7,6 +7,7 @@ import {
   Post,
   Req,
   Res,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -34,6 +35,27 @@ export class AuthController {
     private readonly configService: ConfigService,
   ) {}
 
+  private setRefreshTokenCookie(res: Response, token: string): void {
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    res.cookie('refreshToken', token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+  }
+
+  private clearRefreshTokenCookie(res: Response): void {
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/',
+    });
+  }
+
   @Public()
   @UseGuards(GoogleAuthGuard)
   @Get('google')
@@ -58,9 +80,12 @@ export class AuthController {
       return;
     }
 
+    // Set HttpOnly cookie - token không bao giờ lộ trên URL hay JavaScript client
+    this.setRefreshTokenCookie(res, authResponse.refreshToken);
+
     const redirectUrl = `${frontendUrl}/auth/callback?accessToken=${encodeURIComponent(
       authResponse.accessToken,
-    )}&refreshToken=${encodeURIComponent(authResponse.refreshToken)}`;
+    )}`;
 
     res.redirect(redirectUrl);
   }
@@ -71,8 +96,13 @@ export class AuthController {
   @ApiOperation({ summary: 'Đăng ký tài khoản người dùng mới' })
   @ApiCreatedResponse({ description: 'Đăng ký thành công, trả về Access Token và Refresh Token' })
   @ApiConflictResponse({ description: 'Email đã tồn tại trong hệ thống' })
-  async register(@Body() dto: RegisterDto): Promise<AuthResponse> {
-    return this.authService.register(dto);
+  async register(
+    @Body() dto: RegisterDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthResponse> {
+    const result = await this.authService.register(dto);
+    this.setRefreshTokenCookie(res, result.refreshToken);
+    return result;
   }
 
   @Public()
@@ -81,8 +111,13 @@ export class AuthController {
   @ApiOperation({ summary: 'Đăng nhập vào hệ thống bằng Email và Mật khẩu' })
   @ApiOkResponse({ description: 'Đăng nhập thành công, trả về Access Token và Refresh Token' })
   @ApiUnauthorizedResponse({ description: 'Email hoặc mật khẩu không chính xác' })
-  async login(@Body() dto: LoginDto): Promise<AuthResponse> {
-    return this.authService.login(dto);
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthResponse> {
+    const result = await this.authService.login(dto);
+    this.setRefreshTokenCookie(res, result.refreshToken);
+    return result;
   }
 
   @Public()
@@ -91,8 +126,19 @@ export class AuthController {
   @ApiOperation({ summary: 'Làm mới Access Token thông qua Refresh Token (Token Rotation)' })
   @ApiOkResponse({ description: 'Làm mới token thành công' })
   @ApiUnauthorizedResponse({ description: 'Refresh token không hợp lệ hoặc đã bị thu hồi' })
-  async refresh(@Body() dto: RefreshTokenDto): Promise<AuthResponse> {
-    return this.authService.refresh(dto);
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Body() dto?: RefreshTokenDto,
+  ): Promise<AuthResponse> {
+    const token =
+      (req.cookies as Record<string, string> | undefined)?.refreshToken || dto?.refreshToken;
+    if (!token) {
+      throw new UnauthorizedException('Không tìm thấy Refresh token hợp lệ');
+    }
+    const result = await this.authService.refresh({ refreshToken: token });
+    this.setRefreshTokenCookie(res, result.refreshToken);
+    return result;
   }
 
   @UseGuards(JwtAuthGuard)
@@ -103,9 +149,14 @@ export class AuthController {
   @ApiOkResponse({ description: 'Đăng xuất thành công' })
   async logout(
     @CurrentUser('id') userId: string,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
     @Body() dto?: Partial<RefreshTokenDto>,
   ): Promise<{ message: string }> {
-    await this.authService.logout(userId, dto?.refreshToken);
+    const token =
+      (req.cookies as Record<string, string> | undefined)?.refreshToken || dto?.refreshToken;
+    await this.authService.logout(userId, token);
+    this.clearRefreshTokenCookie(res);
     return { message: 'Đăng xuất thành công' };
   }
 

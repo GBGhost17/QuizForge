@@ -1,6 +1,7 @@
+import { useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
-import { getStoredRefreshToken, setStoredRefreshToken, useAuthStore } from '../stores/auth.store';
+import { useAuthStore } from '../stores/auth.store';
 import type { AuthResponse, UserProfile } from '@quizforge/shared-types';
 import type { LoginInput, RegisterInput } from '@quizforge/validation';
 
@@ -40,7 +41,6 @@ export function useAuth() {
     },
     onSuccess: (data) => {
       setAccessToken(data.accessToken);
-      setStoredRefreshToken(data.refreshToken);
       queryClient.setQueryData(AUTH_QUERY_KEY, data.user);
     },
   });
@@ -55,7 +55,6 @@ export function useAuth() {
     },
     onSuccess: (data) => {
       setAccessToken(data.accessToken);
-      setStoredRefreshToken(data.refreshToken);
       queryClient.setQueryData(AUTH_QUERY_KEY, data.user);
     },
   });
@@ -65,8 +64,7 @@ export function useAuth() {
   // -------------------------------------------------------------
   const logoutMutation = useMutation({
     mutationFn: async (): Promise<void> => {
-      const refreshToken = getStoredRefreshToken();
-      await apiClient.post('/auth/logout', { refreshToken });
+      await apiClient.post('/auth/logout');
     },
     onSettled: () => {
       clearAuth();
@@ -75,6 +73,21 @@ export function useAuth() {
     },
   });
 
+  // -------------------------------------------------------------
+  // HELPER: SILENT REFRESH FROM HTTPONLY COOKIE
+  // -------------------------------------------------------------
+  const refreshSession = useCallback(async (): Promise<AuthResponse | null> => {
+    try {
+      const response = await apiClient.post<AuthResponse>('/auth/refresh');
+      setAccessToken(response.data.accessToken);
+      queryClient.setQueryData(AUTH_QUERY_KEY, response.data.user);
+      return response.data;
+    } catch {
+      clearAuth();
+      return null;
+    }
+  }, [setAccessToken, clearAuth, queryClient]);
+
   return {
     user,
     isAuthenticated,
@@ -82,6 +95,7 @@ export function useAuth() {
     isError,
     error,
     refetchUser,
+    refreshSession,
     login: loginMutation.mutateAsync,
     isLoggingIn: loginMutation.isPending,
     loginError: loginMutation.error,
