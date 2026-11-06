@@ -1,100 +1,95 @@
 # QuizForge — Nhật Ký Tiến Độ & Kế Hoạch Triển Khai (Progress Tracker)
 
 > Cập nhật lần cuối: 2026-11-06  
-> Nhánh hiện tại: `feat/S03-auth-and-permissions`  
-> Giai đoạn hoạt động: **Stage S03 — Authentication and permissions**
+> Nhánh hiện tại: `feat/S04-ui-shell`  
+> Giai đoạn hoạt động: **Stage S04 — UI shell and design system (Hoàn thành / Ready for Review)**
 
 ---
 
 ## 1. Tóm tắt tiến độ tổng quan (Project Status)
 
-|    Stage    | Tên giai đoạn                               |          Trạng thái           | Chi tiết nghiệm thu                                                                                                                                                                     |
-| :---------: | :------------------------------------------ | :---------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|   **S00**   | Discovery and decisions                     |        **HOÀN THÀNH**         | Đặc tả kỹ thuật `PRODUCT_SPEC.md`, `ROADMAP.md`, nhật ký kiến trúc `DECISIONS.md`.                                                                                                      |
-|   **S01**   | Repository bootstrap                        |        **HOÀN THÀNH**         | Monorepo pnpm workspace (`apps/web`, `apps/api`, `packages/shared-types`, `packages/validation`), Vite React 19, NestJS 11, CI GitHub Actions (PR #1 merged).                           |
-|   **S02**   | Database foundation                         |        **HOÀN THÀNH**         | Prisma schema hoàn chỉnh, migration `20261019155105_init_schema`, seed 5 dạng câu hỏi & assessment snapshot, PostgreSQL Docker Compose, CI PostgreSQL container service (PR #4 merged). |
-|   **S03**   | **Authentication and permissions**          | **HOÀN THÀNH (Chờ merge PR)** | Luồng Auth hoàn chỉnh (Argon2id, JWT Rotation, Guards, Decorators, Endpoints, ADR-005, 36 unit tests + integration tests).                                                              |
-|   **S04**   | UI shell and design system                  |        _Chưa bắt đầu_         | Phụ thuộc S01, S03.                                                                                                                                                                     |
-|   **S05**   | Question Bank CRUD                          |        _Chưa bắt đầu_         | Phụ thuộc S02, S03, S04.                                                                                                                                                                |
-| **S06–S15** | Core Assessment, Import, Grading, Live Room |        _Chưa bắt đầu_         | Lộ trình theo `docs/ROADMAP.md`.                                                                                                                                                        |
+|    Stage    | Tên giai đoạn                               |   Trạng thái   | Chi tiết nghiệm thu                                                                                                                                                                     |
+| :---------: | :------------------------------------------ | :------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|   **S00**   | Discovery and decisions                     | **HOÀN THÀNH** | Đặc tả kỹ thuật `PRODUCT_SPEC.md`, `ROADMAP.md`, nhật ký kiến trúc `DECISIONS.md`.                                                                                                      |
+|   **S01**   | Repository bootstrap                        | **HOÀN THÀNH** | Monorepo pnpm workspace (`apps/web`, `apps/api`, `packages/shared-types`, `packages/validation`), Vite React 19, NestJS 11, CI GitHub Actions (PR #1 merged).                           |
+|   **S02**   | Database foundation                         | **HOÀN THÀNH** | Prisma schema hoàn chỉnh, migration `20261019155105_init_schema`, seed 5 dạng câu hỏi & assessment snapshot, PostgreSQL Docker Compose, CI PostgreSQL container service (PR #4 merged). |
+|   **S03**   | Authentication and permissions              | **HOÀN THÀNH** | Luồng Auth hoàn chỉnh (Argon2id, JWT Rotation, Guards, Decorators, 7 Endpoints, Swagger Bearer Auth, ADR-005, 36 unit tests + integration tests) (PR #5 merged).                        |
+|   **S04**   | **UI shell and design system**              | **HOÀN THÀNH** | Khung giao diện responsive, Design System primitives, màn hình Auth (Login, Register, Reset, Forgot), trạng thái Empty/Loading/Error, điều hướng vai trò Creator/Participant.           |
+|   **S05**   | Question Bank CRUD                          | _Chưa bắt đầu_ | Phụ thuộc S02, S03, S04. Quản lý ngân hàng câu hỏi, soạn thảo, preview các loại câu hỏi.                                                                                                |
+| **S06–S15** | Core Assessment, Import, Grading, Live Room | _Chưa bắt đầu_ | Lộ trình theo `docs/ROADMAP.md`.                                                                                                                                                        |
 
 ---
 
-## 2. Kế hoạch chi tiết Stage S03: Authentication and Permissions
+## 2. Chi tiết thực hiện Stage S04: UI Shell and Design System
 
-### 2.1. Mục tiêu và Deliverable
+### 2.1. Deliverables đã hoàn thành
 
-- Triển khai đầy đủ luồng xác thực an toàn: Đăng ký (`register`), Đăng nhập (`login`), Làm mới phiên (`refresh token`), Đăng xuất (`logout`), Đặt lại mật khẩu (`forgot-password`, `reset-password`).
-- Áp dụng thuật toán băm mật khẩu chuẩn **Argon2id** (theo `.agent/rules/03-security-privacy.md`).
-- Quản lý phiên làm việc với cặp JWT Access Token (ngắn hạn: 15 phút) và Refresh Token được băm SHA-256 lưu trong DB, hỗ trợ xoay vòng (token rotation) và thu hồi (revocation).
-- Xây dựng hệ thống bảo vệ endpoints: `JwtAuthGuard`, `RolesGuard` (`USER`, `ADMIN`), các custom decorators `@CurrentUser()`, `@Roles()`.
-- Ghi nhận quyết định kiến trúc **ADR-005** vào `docs/DECISIONS.md`.
-- Bộ kiểm thử unit test và integration test đạt chuẩn CI.
+- **Design System nền tảng**: Bộ UI primitives tái sử dụng trong `apps/web/src/components/ui/` (`Button`, `Input`, `Label`, `Card`, `Badge`, `Alert`) với Tailwind CSS v4 và Lucide icons, hỗ trợ đầy đủ accessibility (`aria-*`, keyboard focus ring, dark/light ready).
+- **Điều hướng & Layout Shell**:
+  - `Navbar`: Header với Brand logo, switcher chuyển đổi không gian làm việc Giáo viên (Creator) / Học sinh (Participant), dropdown user profile & nút đăng xuất.
+  - `Sidebar`: Danh mục tính năng thích ứng theo vai trò đang chọn (Creator: Ngân hàng câu hỏi, Đề thi, Chấm bài, Import Markdown; Participant: Vào thi, Lịch sử nộp, Tự luyện tập) đi kèm responsive Mobile Drawer.
+  - `MainLayout`: Bố cục khung hoàn chỉnh kèm Skip-to-content accessibility link và `ErrorBoundary` bao bọc Outlet.
+- **Client Auth State & API Client**:
+  - `apiClient` (`apps/web/src/lib/api-client.ts`): Tự động đính kèm `Bearer <token>`, interceptor xử lý `401 Unauthorized` với token rotation tự động và concurrency queue chống race condition.
+  - `useAuthStore` (`apps/web/src/stores/auth.store.ts`): Quản lý Access Token strictly in-memory qua Zustand.
+  - `useAuth` hook (`apps/web/src/hooks/useAuth.ts`): Quản lý Server State qua TanStack Query (`/auth/me`, login, register, logout mutations).
+- **Màn hình Xác thực (Auth Pages)**:
+  - `LoginPage` (`/login`): Form đăng nhập với client-side validation từ `@quizforge/validation`.
+  - `RegisterPage` (`/register`): Đăng ký tài khoản với kiểm tra khớp mật khẩu và tiêu chuẩn độ phức tạp.
+  - `ForgotPasswordPage` (`/forgot-password`): Gửi yêu cầu đặt lại mật khẩu với thông báo trạng thái.
+  - `ResetPasswordPage` (`/reset-password`): Khôi phục mật khẩu thông qua token xác thực.
+- **Route Guards & Protection**:
+  - `ProtectedRoute`: Chặn người dùng chưa đăng nhập, tự động lưu URL chuyển hướng về `/login`.
+  - `PublicOnlyRoute`: Chặn người dùng đã đăng nhập truy cập lại các trang auth.
+  - `PlaceholderPage`: Giao diện thân thiện giữ chỗ cho các tính năng các stage tiếp theo (`/question-banks`, `/tests`, `/submissions`, `/import`, `/join`, `/attempts`, `/practice`, `/settings`).
+- **Kiểm thử tự động (Test Suite)**:
+  - Vitest: 38 unit & integration tests trong `apps/web` (toàn bộ pass 100%).
+  - Playwright: Cập nhật smoke test kiểm tra shell brand navigation và trang login.
+  - Tổng thể workspace: 88 unit tests, typecheck sạch, ESLint 0 warning/0 error, Prettier formatting chuẩn.
 
 ---
 
 ### 2.2. Danh sách công việc (Task Breakdown & Checklist)
 
-- [x] **Bước 1: Cài đặt thư viện phụ thuộc (`apps/api`)**
-  - Cài đặt `argon2` cho băm mật khẩu.
-  - Cài đặt `@nestjs/jwt`, `@nestjs/passport`, `passport`, `passport-jwt`, `@types/passport-jwt`.
-  - Cài đặt `@nestjs/config` để quản lý biến môi trường JWT (`JWT_SECRET`, `JWT_EXPIRES_IN`, v.v.).
+- [x] **Bước 1: Thiết lập API Client & Quản lý Phiên (`apps/web`)**
+  - Cài đặt `zustand` và `axios`.
+  - Tạo `apiClient` (`apps/web/src/lib/api-client.ts`) với Request Bearer Interceptor và 401 Response Interceptor (Token Rotation & Concurrency Queue).
+  - Tạo `useAuthStore` (`apps/web/src/stores/auth.store.ts`) lưu trữ `accessToken` trong memory và `refreshToken` an toàn.
+  - Tạo hook `useAuth()` (`apps/web/src/hooks/useAuth.ts`) tích hợp TanStack Query quản lý Server State (`/auth/me`, login, register, logout).
 
-- [x] **Bước 2: Cấu hình biến môi trường & Module Config**
-  - Cập nhật file `.env.example` và `.env` với cấu hình JWT secrets và thời hạn token.
-  - Tích hợp `ConfigModule` vào `AppModule`.
+- [x] **Bước 2: Xây dựng bộ UI Primitives (Design System Components)**
+  - Cài đặt `lucide-react`.
+  - `Button`: Hỗ trợ variants (default, primary, secondary, outline, ghost, destructive, link) và sizes (sm, md, lg, icon), hỗ trợ `isLoading` với spinner icon.
+  - `Input`: Hỗ trợ label, error state (`aria-invalid`), helper text, focus-visible styles.
+  - `Label`: Accessible label với indicator bắt buộc.
+  - `Card`: `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter`.
+  - `Badge`: Variants default, secondary, outline, success, destructive.
+  - `Alert`: `Alert`, `AlertTitle`, `AlertDescription`, variants default, error, success, warning kết hợp icon từ `lucide-react`.
+  - Kiểm thử 9 kịch bản tự động cho toàn bộ UI primitives.
 
-- [x] **Bước 3: Định nghĩa Contracts & Validation Schemas**
-  - Thêm type/interface trong `packages/shared-types` (Auth payload, Auth response, User profile).
-  - Thêm Zod schemas và DTOs kiểm tra tính hợp lệ của request:
-    - Email hợp lệ.
-    - Password tối thiểu 8 ký tự, có chữ hoa, chữ số.
-    - DTOs: `RegisterDto`, `LoginDto`, `RefreshTokenDto`, `ForgotPasswordDto`, `ResetPasswordDto`.
+- [x] **Bước 3: Xây dựng Layouts & Điều hướng (Shell)**
+  - `Navbar`: Logo, Menu điều hướng, thanh tìm kiếm nhanh, nút đổi vai trò (Creator / Participant), Dropdown User Profile & Logout.
+  - `Sidebar` & Mobile Drawer: Danh mục tính năng (Ngân hàng câu hỏi, Đề thi, Lịch sử làm bài, Cài đặt).
+  - Component trạng thái dùng chung: `LoadingSpinner`, `EmptyState`, `ErrorBoundary`.
 
-- [x] **Bước 4: Xây dựng Service Hashing & Quản lý Token (`AuthService`)**
-  - Hàm băm và so khớp mật khẩu bằng `argon2id`.
-  - Tạo Access Token JWT.
-  - Tạo và băm SHA-256 cho Refresh Token; lưu trữ vào bảng `refresh_tokens`.
-  - Xử lý thu hồi Refresh Token khi đăng xuất hoặc phát hiện sử dụng token đã hết hạn.
-  - Xử lý tạo và xác thực token đặt lại mật khẩu trong bảng `password_reset_tokens`.
+- [x] **Bước 4: Xây dựng các trang Xác thực (Auth Pages)**
+  - Trang Đăng nhập (`/login`).
+  - Trang Đăng ký (`/register`).
+  - Trang Quên mật khẩu (`/forgot-password`).
+  - Trang Đặt lại mật khẩu (`/reset-password`).
+  - Đồng bộ validation client-side sử dụng Zod schemas từ `@quizforge/validation`.
 
-- [x] **Bước 5: Xây dựng Strategy & Guards**
-  - `JwtStrategy` trích xuất và xác thực Bearer token từ Authorization Header.
-  - `JwtAuthGuard` bảo vệ các route riêng tư.
-  - `RolesGuard` và `@Roles(...)` phân quyền theo `UserRole` (`USER`, `ADMIN`).
-  - `@CurrentUser()` decorator trích xuất payload người dùng hiện tại an toàn.
+- [x] **Bước 5: Thiết lập Route Protection & Dashboard Shells**
+  - `ProtectedRoute` và `PublicOnlyRoute` trong `router.tsx`.
+  - Trang `DashboardPage` thích ứng linh hoạt theo vai trò Creator / Participant với Call-to-actions và Empty States.
 
-- [x] **Bước 6: Xây dựng Controller & API Endpoints (`/api/v1/auth`)**
-  - `POST /api/v1/auth/register` — Đăng ký tài khoản mới.
-  - `POST /api/v1/auth/login` — Đăng nhập, nhận Access & Refresh Token.
-  - `POST /api/v1/auth/refresh` — Làm mới Access Token thông qua Refresh Token.
-  - `POST /api/v1/auth/logout` — Đăng xuất và thu hồi Refresh Token.
-  - `POST /api/v1/auth/forgot-password` — Tạo token đặt lại mật khẩu.
-  - `POST /api/v1/auth/reset-password` — Cập nhật mật khẩu mới bằng token hợp lệ.
-  - `GET /api/v1/auth/me` — Lấy thông tin tài khoản đang đăng nhập.
+- [x] **Bước 6: Kiểm thử tự động (Unit Tests & E2E Smoke Tests)**
+  - Unit tests cho `auth.store`, `api-client`, `useAuth`, `ui-primitives`, `Layout`, `AuthPages`.
+  - Playwright E2E smoke test kiểm tra shell brand và navigation.
 
-- [x] **Bước 7: Ghi nhận Kiến trúc (ADR-005)**
-  - Ghi nhận `ADR-005: Authentication Transport and Token Rotation Strategy` vào `docs/DECISIONS.md`.
-
-- [x] **Bước 8: Kiểm thử tự động (Unit & Integration Tests)**
-  - Viết `auth.service.spec.ts`: Test hash password, kiểm tra mật khẩu đúng/sai, luồng xoay vòng token, thu hồi token.
-  - Viết `auth.controller.spec.ts`: Test các endpoint đăng ký, đăng nhập, refresh, logout, reset password, get me.
-  - Viết `jwt.strategy.spec.ts`, `jwt-auth.guard.spec.ts`, `roles.guard.spec.ts`.
-  - Viết `auth.integration-spec.ts`: Test toàn trình trên Prisma integration.
-  - Viết `auth.test.ts` trong `packages/validation`: Test các Zod schemas.
-
-- [x] **Bước 9: Kiểm tra chất lượng & Mở Pull Request**
-  - Chạy `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
-  - Push lên nhánh `origin/feat/S03-auth-and-permissions` và mở Pull Request S03.
-
----
-
-## 3. Các giai đoạn kế tiếp (Next Stages Ahead)
-
-1. **Stage S04 (UI Shell & Design System)**:
-   - Dựng Layout chính (Header, Sidebar, Navigation).
-   - Màn hình Auth (Đăng nhập, Đăng ký, Quên mật khẩu).
-   - Tích hợp Auth State trên Frontend (React Context / Zustand).
-2. **Stage S05 (Question Bank CRUD)**:
-   - Giao diện và API tạo, sửa, xóa, tìm kiếm câu hỏi theo 5 dạng.
-   - Phân quyền sở hữu ngân hàng câu hỏi.
+- [x] **Bước 7: Kiểm tra chất lượng & Sẵn sàng Mở Pull Request S04**
+  - `pnpm format:check` — PASSED.
+  - `pnpm lint` — PASSED (0 errors, 0 warnings).
+  - `pnpm typecheck` — PASSED (4 packages).
+  - `pnpm build` — PASSED (Vite + NestJS).
+  - `pnpm test` (web) — 38/38 PASSED.

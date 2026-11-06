@@ -1,6 +1,18 @@
 import { expect, test } from '@playwright/test';
 
-test('home page renders the scaffold shell', async ({ page }) => {
+test('UI shell renders brand and dashboard navigation', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: /scaffold is ready/i })).toBeVisible();
+
+  // Expect brand in navigation bar
+  await expect(page.getByRole('link', { name: /quiz.*forge/i })).toBeVisible();
+
+  // Expect dashboard welcome heading
+  await expect(page.getByRole('heading', { name: /xin chào/i })).toBeVisible();
+
+  // Navigate to login page
+  await page
+    .getByRole('link', { name: /đăng nhập/i })
+    .first()
+    .click();
+  await expect(page.getByRole('heading', { name: /đăng nhập quizforge/i })).toBeVisible();
 });
