@@ -7,6 +7,7 @@ import { LoginPage } from '../pages/auth/LoginPage';
 import { RegisterPage } from '../pages/auth/RegisterPage';
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
+import { GoogleCallbackPage } from '../pages/auth/GoogleCallbackPage';
 import { PlaceholderPage } from '../pages/PlaceholderPage';
 
 export const router = createBrowserRouter([
@@ -49,6 +50,10 @@ export const router = createBrowserRouter([
             <ResetPasswordPage />
           </PublicOnlyRoute>
         ),
+      },
+      {
+        path: 'auth/callback',
+        element: <GoogleCallbackPage />,
       },
       // Protected Routes / Placeholders for Creator
       {

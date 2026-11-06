@@ -1,8 +1,10 @@
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserRole } from '@prisma/client';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import type { AuthResponse, UserProfile } from '@quizforge/shared-types';
+import type { Request, Response } from 'express';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -38,7 +40,18 @@ describe('AuthController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [{ provide: AuthService, useValue: mockAuthService }],
+      providers: [
+        { provide: AuthService, useValue: mockAuthService },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockImplementation((key, defaultVal) => {
+              if (key === 'FRONTEND_URL') return 'http://localhost:5173';
+              return defaultVal;
+            }),
+          },
+        },
+      ],
     }).compile();
 
     controller = module.get<AuthController>(AuthController);
@@ -50,47 +63,75 @@ describe('AuthController', () => {
       password: 'ValidPassword123',
       name: 'Test User',
     };
-    const res = await controller.register(dto);
+    const result = await controller.register(dto);
     expect(mockAuthService.register).toHaveBeenCalledWith(dto);
-    expect(res).toEqual(mockAuthResponse);
+    expect(result).toBe(mockAuthResponse);
   });
 
   it('delegates login to AuthService', async () => {
     const dto = { email: 'user@quizforge.local', password: 'ValidPassword123' };
-    const res = await controller.login(dto);
+    const result = await controller.login(dto);
     expect(mockAuthService.login).toHaveBeenCalledWith(dto);
-    expect(res).toEqual(mockAuthResponse);
+    expect(result).toBe(mockAuthResponse);
   });
 
   it('delegates refresh to AuthService', async () => {
-    const dto = { refreshToken: 'valid-refresh-token' };
-    const res = await controller.refresh(dto);
+    const dto = { refreshToken: 'valid-token' };
+    const result = await controller.refresh(dto);
     expect(mockAuthService.refresh).toHaveBeenCalledWith(dto);
-    expect(res).toEqual(mockAuthResponse);
+    expect(result).toBe(mockAuthResponse);
   });
 
-  it('delegates logout to AuthService with user id', async () => {
-    const res = await controller.logout('user-1', { refreshToken: 'sample-token' });
-    expect(mockAuthService.logout).toHaveBeenCalledWith('user-1', 'sample-token');
-    expect(res).toEqual({ message: 'Đăng xuất thành công' });
+  it('delegates logout to AuthService', async () => {
+    const result = await controller.logout('user-1', { refreshToken: 'rev-token' });
+    expect(mockAuthService.logout).toHaveBeenCalledWith('user-1', 'rev-token');
+    expect(result).toEqual({ message: 'Đăng xuất thành công' });
   });
 
   it('delegates forgotPassword to AuthService', async () => {
     const dto = { email: 'user@quizforge.local' };
-    const res = await controller.forgotPassword(dto);
+    const result = await controller.forgotPassword(dto);
     expect(mockAuthService.forgotPassword).toHaveBeenCalledWith(dto);
-    expect(res.message).toBe('Success');
+    expect(result).toEqual({ message: 'Success' });
   });
 
   it('delegates resetPassword to AuthService', async () => {
-    const dto = { token: 'reset-tok', newPassword: 'NewValidPassword123' };
-    const res = await controller.resetPassword(dto);
+    const dto = { token: 'tok-1', newPassword: 'NewPassword123' };
+    const result = await controller.resetPassword(dto);
     expect(mockAuthService.resetPassword).toHaveBeenCalledWith(dto);
-    expect(res.message).toBe('Success');
+    expect(result).toEqual({ message: 'Success' });
   });
 
-  it('returns current user profile directly from decorator', async () => {
-    const res = await controller.getMe(mockUserProfile);
-    expect(res).toEqual(mockUserProfile);
+  it('returns current user on getMe', async () => {
+    const result = await controller.getMe(mockUserProfile);
+    expect(result).toBe(mockUserProfile);
+  });
+
+  it('redirects to frontend callback with tokens on googleAuthCallback', async () => {
+    const mockRes = {
+      redirect: jest.fn(),
+    } as unknown as Response;
+    const mockReq = {
+      user: mockAuthResponse,
+    } as unknown as Request & { user?: AuthResponse };
+
+    await controller.googleAuthCallback(mockReq, mockRes);
+
+    expect(mockRes.redirect).toHaveBeenCalledWith(
+      `http://localhost:5173/auth/callback?accessToken=${encodeURIComponent(
+        mockAuthResponse.accessToken,
+      )}&refreshToken=${encodeURIComponent(mockAuthResponse.refreshToken)}`,
+    );
+  });
+
+  it('redirects to login error when google user is missing in callback', async () => {
+    const mockRes = {
+      redirect: jest.fn(),
+    } as unknown as Response;
+    const mockReq = {} as unknown as Request & { user?: AuthResponse };
+
+    await controller.googleAuthCallback(mockReq, mockRes);
+
+    expect(mockRes.redirect).toHaveBeenCalledWith('http://localhost:5173/login?error=oauth_failed');
   });
 });

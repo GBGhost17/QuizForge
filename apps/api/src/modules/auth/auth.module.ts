@@ -6,7 +6,8 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { DEFAULT_JWT_ACCESS_EXPIRES_IN, DEFAULT_JWT_SECRET } from './auth.constants';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard, RolesGuard } from './guards';
+import { GoogleAuthGuard, JwtAuthGuard, RolesGuard } from './guards';
+import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
@@ -28,7 +29,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard],
-  exports: [AuthService, JwtAuthGuard, RolesGuard, JwtModule],
+  providers: [AuthService, JwtStrategy, GoogleStrategy, JwtAuthGuard, GoogleAuthGuard, RolesGuard],
+  exports: [AuthService, JwtAuthGuard, GoogleAuthGuard, RolesGuard, JwtModule],
 })
 export class AuthModule {}

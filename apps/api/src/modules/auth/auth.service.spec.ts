@@ -385,4 +385,76 @@ describe('AuthService', () => {
       await expect(service.getMe('non-existent')).rejects.toThrow(UnauthorizedException);
     });
   });
+
+  describe('validateOrCreateGoogleUser', () => {
+    it('returns tokens for existing user with matching googleId', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValueOnce({
+        ...mockUser,
+        googleId: 'google-id-123',
+      });
+
+      const result = await service.validateOrCreateGoogleUser({
+        googleId: 'google-id-123',
+        email: mockUser.email,
+        name: mockUser.name,
+      });
+
+      expect(result.accessToken).toBe('signed-jwt-access-token');
+      expect(result.user.email).toBe(mockUser.email);
+    });
+
+    it('links googleId to existing user with matching email', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValueOnce(null);
+      mockPrismaService.user.findUnique.mockResolvedValueOnce(mockUser);
+      mockPrismaService.user.update.mockResolvedValueOnce({
+        ...mockUser,
+        googleId: 'google-id-456',
+      });
+
+      const result = await service.validateOrCreateGoogleUser({
+        googleId: 'google-id-456',
+        email: mockUser.email,
+        name: mockUser.name,
+      });
+
+      expect(mockPrismaService.user.update).toHaveBeenCalled();
+      expect(result.accessToken).toBe('signed-jwt-access-token');
+    });
+
+    it('creates a new user when neither googleId nor email exists', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValueOnce(null);
+      mockPrismaService.user.findUnique.mockResolvedValueOnce(null);
+      const newUser = {
+        id: 'new-google-user-id',
+        email: 'googleuser@gmail.com',
+        name: 'Google User',
+        googleId: 'google-id-789',
+        role: UserRole.USER,
+        avatarUrl: 'https://avatar.url',
+        isEmailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      mockPrismaService.user.create.mockResolvedValueOnce(newUser);
+
+      const result = await service.validateOrCreateGoogleUser({
+        googleId: 'google-id-789',
+        email: 'googleuser@gmail.com',
+        name: 'Google User',
+        avatarUrl: 'https://avatar.url',
+      });
+
+      expect(mockPrismaService.user.create).toHaveBeenCalledWith({
+        data: {
+          email: 'googleuser@gmail.com',
+          name: 'Google User',
+          googleId: 'google-id-789',
+          avatarUrl: 'https://avatar.url',
+          isEmailVerified: true,
+          role: UserRole.USER,
+        },
+      });
+      expect(result.user.id).toBe(newUser.id);
+    });
+  });
 });

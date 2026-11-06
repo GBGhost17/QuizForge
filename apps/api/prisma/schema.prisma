@@ -81,7 +81,8 @@ enum ImportStatus {
 model User {
   id              String   @id @default(uuid())
   email           String   @unique
-  passwordHash    String
+  passwordHash    String?
+  googleId        String?  @unique
   name            String
   role            UserRole @default(USER)
   avatarUrl       String?
