@@ -118,7 +118,7 @@ export class AuthService {
       where: { email },
     });
 
-    if (!user) {
+    if (!user || !user.passwordHash) {
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
     }
 
@@ -126,6 +126,59 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
     }
+
+    return this.generateAuthResponse(user);
+  }
+
+  /**
+   * Finds or creates a user authenticated via Google OAuth.
+   * Seamlessly links with existing email accounts or creates new users.
+   */
+  async validateOrCreateGoogleUser(profile: {
+    googleId: string;
+    email: string;
+    name: string;
+    avatarUrl?: string | null;
+  }): Promise<AuthResponse> {
+    const email = profile.email.trim().toLowerCase();
+
+    // 1. Check if user with this googleId already exists
+    let user = await this.prisma.user.findUnique({
+      where: { googleId: profile.googleId },
+    });
+
+    if (user) {
+      return this.generateAuthResponse(user);
+    }
+
+    // 2. Check if user with this email already exists -> link googleId
+    user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (user) {
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          googleId: profile.googleId,
+          isEmailVerified: true,
+          avatarUrl: user.avatarUrl ?? profile.avatarUrl ?? null,
+        },
+      });
+      return this.generateAuthResponse(user);
+    }
+
+    // 3. Create brand new user without password
+    user = await this.prisma.user.create({
+      data: {
+        email,
+        name: profile.name.trim() || email.split('@')[0] || 'Google User',
+        googleId: profile.googleId,
+        avatarUrl: profile.avatarUrl ?? null,
+        isEmailVerified: true,
+        role: UserRole.USER,
+      },
+    });
 
     return this.generateAuthResponse(user);
   }

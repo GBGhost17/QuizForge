@@ -7,8 +7,9 @@ import { LoginPage } from './LoginPage';
 import { RegisterPage } from './RegisterPage';
 import { ForgotPasswordPage } from './ForgotPasswordPage';
 import { ResetPasswordPage } from './ResetPasswordPage';
+import { GoogleCallbackPage } from './GoogleCallbackPage';
 import { apiClient } from '../../lib/api-client';
-import { useAuthStore } from '../../stores/auth.store';
+import { useAuthStore, getStoredRefreshToken } from '../../stores/auth.store';
 
 describe('Auth Pages Integration', () => {
   let queryClient: QueryClient;
@@ -54,6 +55,16 @@ describe('Auth Pages Integration', () => {
       expect(screen.getByLabelText(/địa chỉ email/i)).toBeTruthy();
       expect(screen.getByLabelText(/mật khẩu/i)).toBeTruthy();
       expect(screen.getByRole('button', { name: /^đăng nhập$/i })).toBeTruthy();
+    });
+
+    it('renders Google login button', () => {
+      renderWithProviders(<LoginPage />);
+      expect(screen.getByRole('button', { name: /đăng nhập với google/i })).toBeTruthy();
+    });
+
+    it('shows oauth error when error=oauth_failed is in URL', () => {
+      renderWithProviders(<LoginPage />, ['/login?error=oauth_failed']);
+      expect(screen.getByText(/đăng nhập bằng tài khoản google không thành công/i)).toBeTruthy();
     });
 
     it('shows validation error when email is invalid', async () => {
@@ -117,6 +128,11 @@ describe('Auth Pages Integration', () => {
   });
 
   describe('RegisterPage', () => {
+    it('renders Google register button', () => {
+      renderWithProviders(<RegisterPage />);
+      expect(screen.getByRole('button', { name: /đăng ký với google/i })).toBeTruthy();
+    });
+
     it('shows error when passwords do not match', async () => {
       renderWithProviders(<RegisterPage />);
 
@@ -242,6 +258,31 @@ describe('Auth Pages Integration', () => {
       });
 
       postSpy.mockRestore();
+    });
+  });
+
+  describe('GoogleCallbackPage', () => {
+    it('processes tokens from URL, updates store, and redirects to home', async () => {
+      renderWithProviders(
+        <Routes>
+          <Route path="/auth/callback" element={<GoogleCallbackPage />} />
+          <Route path="/" element={<div>Trang chủ từ OAuth</div>} />
+        </Routes>,
+        ['/auth/callback?accessToken=google-acc-token&refreshToken=google-ref-token'],
+      );
+
+      await waitFor(() => {
+        expect(useAuthStore.getState().accessToken).toBe('google-acc-token');
+        expect(getStoredRefreshToken()).toBe('google-ref-token');
+        expect(screen.getByText('Trang chủ từ OAuth')).toBeTruthy();
+      });
+    });
+
+    it('renders error alert when tokens are missing', async () => {
+      renderWithProviders(<GoogleCallbackPage />, ['/auth/callback?error=oauth_failed']);
+
+      expect(await screen.findByText(/xác thực tài khoản google không thành công/i)).toBeTruthy();
+      expect(screen.getByRole('button', { name: /quay lại trang đăng nhập/i })).toBeTruthy();
     });
   });
 });

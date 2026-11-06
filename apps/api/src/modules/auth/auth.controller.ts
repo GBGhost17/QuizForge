@@ -1,4 +1,16 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Request, Response } from 'express';
 import {
   ApiBearerAuth,
   ApiConflictResponse,
@@ -11,13 +23,47 @@ import {
 import { AuthService } from './auth.service';
 import { CurrentUser, Public } from './decorators';
 import { ForgotPasswordDto, LoginDto, RefreshTokenDto, RegisterDto, ResetPasswordDto } from './dto';
-import { JwtAuthGuard } from './guards';
+import { GoogleAuthGuard, JwtAuthGuard } from './guards';
 import type { AuthResponse, UserProfile } from '@quizforge/shared-types';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  @Public()
+  @UseGuards(GoogleAuthGuard)
+  @Get('google')
+  @ApiOperation({ summary: 'Khởi tạo luồng xác thực Google OAuth 2.0' })
+  async googleAuth(): Promise<void> {
+    // Được xử lý tự động bởi GoogleAuthGuard
+  }
+
+  @Public()
+  @UseGuards(GoogleAuthGuard)
+  @Get('google/callback')
+  @ApiOperation({ summary: 'Callback xử lý kết quả xác thực từ Google OAuth 2.0' })
+  async googleAuthCallback(
+    @Req() req: Request & { user?: AuthResponse },
+    @Res() res: Response,
+  ): Promise<void> {
+    const authResponse = req.user;
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+
+    if (!authResponse) {
+      res.redirect(`${frontendUrl}/login?error=oauth_failed`);
+      return;
+    }
+
+    const redirectUrl = `${frontendUrl}/auth/callback?accessToken=${encodeURIComponent(
+      authResponse.accessToken,
+    )}&refreshToken=${encodeURIComponent(authResponse.refreshToken)}`;
+
+    res.redirect(redirectUrl);
+  }
 
   @Public()
   @Post('register')
