@@ -19,6 +19,7 @@ async function bootstrap(): Promise<void> {
     .setTitle('QuizForge API')
     .setDescription('QuizForge REST API (v1)')
     .setVersion('0.0.0')
+    .addBearerAuth()
     .build();
   SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, config));
 
