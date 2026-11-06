@@ -28,5 +28,14 @@ describe('Auth Store (Zustand)', () => {
     const state = useAuthStore.getState();
     expect(state.accessToken).toBeNull();
     expect(state.isAuthenticated).toBe(false);
+    expect(state.isInitialized).toBe(true);
+  });
+
+  it('tracks initialization state via setInitialized', () => {
+    useAuthStore.setState({ isInitialized: false });
+    expect(useAuthStore.getState().isInitialized).toBe(false);
+
+    useAuthStore.getState().setInitialized(true);
+    expect(useAuthStore.getState().isInitialized).toBe(true);
   });
 });

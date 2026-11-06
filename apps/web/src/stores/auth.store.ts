@@ -3,7 +3,9 @@ import { create } from 'zustand';
 export interface AuthUIState {
   accessToken: string | null;
   isAuthenticated: boolean;
+  isInitialized: boolean;
   setAccessToken: (token: string | null) => void;
+  setInitialized: (initialized: boolean) => void;
   clearAuth: () => void;
 }
 
@@ -15,15 +17,18 @@ export interface AuthUIState {
 export const useAuthStore = create<AuthUIState>((set) => ({
   accessToken: null,
   isAuthenticated: false,
+  isInitialized: false,
   setAccessToken: (token: string | null) =>
     set({
       accessToken: token,
       isAuthenticated: Boolean(token),
     }),
+  setInitialized: (initialized: boolean) => set({ isInitialized: initialized }),
   clearAuth: () => {
     set({
       accessToken: null,
       isAuthenticated: false,
+      isInitialized: true,
     });
   },
 }));

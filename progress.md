@@ -142,3 +142,45 @@
   - `pnpm typecheck` — PASSED (4 packages).
   - `pnpm build` — PASSED (Vite + NestJS).
   - `pnpm test` (web) — 38/38 PASSED.
+
+---
+
+## 3. Chi tiết thực hiện Stage S05: Question Bank CRUD
+
+### 3.1. Deliverables đã hoàn thành
+
+- **Hợp đồng công cộng & Validation Schemas (`packages/shared-types` & `packages/validation`)**:
+  - Types: `QuestionType` (5 loại), `Difficulty`, `QuestionOption`, `Question`, `QuestionBank`, các DTOs phân trang và truy vấn.
+  - Zod Schemas: `CreateQuestionBankSchema`, `UpdateQuestionBankSchema`, `QuestionBankQuerySchema`, `CreateQuestionSchema`, `UpdateQuestionSchema`, `QuestionQuerySchema`.
+  - Refinement rules kiểm duyệt chặt chẽ 5 loại câu hỏi:
+    - `SINGLE_CHOICE`: $\ge 2$ đáp án, chính xác 1 đáp án đúng.
+    - `MULTIPLE_CHOICE`: $\ge 2$ đáp án, ít nhất 1 đáp án đúng.
+    - `TRUE_FALSE`: Chính xác 2 lựa chọn ("Đúng" và "Sai"), chính xác 1 đáp án đúng.
+    - `SHORT_ANSWER`: Ít nhất 1 đáp án đúng / chấp nhận.
+    - `ESSAY`: Prompt, điểm số mặc định, rubric chấm điểm và đáp án mẫu (model answer).
+  - Unit tests: 19 tests trong `question-bank.test.ts` pass 100%.
+
+- **Backend Modules (`apps/api`)**:
+  - `QuestionBanksModule`:
+    - `QuestionBanksService`: CRUD ngân hàng câu hỏi, kiểm tra quyền sở hữu (`ownerId`), tìm kiếm theo từ khóa (`q`), lọc trạng thái (`isArchived`), phân trang (`page`, `limit`), cơ chế xóa an toàn (tự động archive nếu đã có đề thi sử dụng).
+    - `QuestionBanksController`: Endpoints `/api/v1/question-banks` được bảo vệ bởi `JwtAuthGuard` và trích xuất `userId` từ token.
+    - Unit tests: 13 tests trong `question-banks.service.spec.ts` & `question-banks.controller.spec.ts` pass 100%.
+  - `QuestionsModule`:
+    - `QuestionsService`: CRUD câu hỏi trong ngân hàng, giao dịch `$transaction` nguyên tử để tạo/cập nhật câu hỏi và danh sách options, kiểm tra quyền sở hữu ngân hàng, tự động chuyển archive nếu câu hỏi đã được chụp snapshot trong đề thi.
+    - `QuestionsController`: Endpoints `/api/v1/question-banks/:bankId/questions` và `/api/v1/questions/:id`.
+    - Unit tests: 15 tests trong `questions.service.spec.ts` & `questions.controller.spec.ts` pass 100%.
+
+- **Frontend Views & API State (`apps/web`)**:
+  - TanStack Query hooks: `useQuestionBanks`, `useQuestionBank`, `useCreateQuestionBank`, `useUpdateQuestionBank`, `useDeleteQuestionBank`, `useQuestions`, `useQuestion`, `useCreateQuestion`, `useUpdateQuestion`, `useDeleteQuestion`.
+  - `QuestionBanksPage` (`/question-banks`): Danh sách ngân hàng dưới dạng lưới Card trực quan, thanh tìm kiếm, bộ lọc trạng thái, modal tạo/sửa ngân hàng, xác nhận xóa.
+  - `QuestionBankDetailPage` (`/question-banks/:id`): Xem chi tiết ngân hàng, bộ lọc câu hỏi theo 5 loại và độ khó, danh sách hiển thị đầy đủ options, đáp án đúng (dành cho giáo viên sở hữu), rubric tự luận.
+  - `QuestionEditorModal`: Modal biên tập câu hỏi hỗ trợ đầy đủ 5 loại câu hỏi, phân loại chủ đề, tags, điểm số và lời giải chi tiết.
+  - Router: Kết nối route `/question-banks` và `/question-banks/:id` được bảo vệ bởi `ProtectedRoute`.
+  - Integration tests: 5 kịch bản tự động trong `QuestionBanks.test.tsx` pass 100%.
+
+### 3.2. Danh sách công việc (Checklist Stage S05)
+
+- [x] **Bước 1: Contracts & Zod Schemas (`packages/shared-types` & `packages/validation`)**
+- [x] **Bước 2: Backend Modules (`apps/api`)**
+- [x] **Bước 3: Frontend Views & API State (`apps/web`)**
+- [x] **Bước 4: Kiểm tra chất lượng toàn diện (Typecheck, Lint, Tests, Build)**

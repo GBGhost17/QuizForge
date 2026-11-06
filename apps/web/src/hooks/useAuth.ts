@@ -9,7 +9,7 @@ export const AUTH_QUERY_KEY = ['auth', 'me'] as const;
 
 export function useAuth() {
   const queryClient = useQueryClient();
-  const { accessToken, isAuthenticated, setAccessToken, clearAuth } = useAuthStore();
+  const { accessToken, isAuthenticated, isInitialized, setAccessToken, clearAuth } = useAuthStore();
 
   // -------------------------------------------------------------
   // SERVER STATE: CURRENT USER PROFILE
@@ -91,6 +91,7 @@ export function useAuth() {
   return {
     user,
     isAuthenticated,
+    isInitialized,
     isLoading,
     isError,
     error,

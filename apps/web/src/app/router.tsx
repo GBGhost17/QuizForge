@@ -9,6 +9,8 @@ import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
 import { GoogleCallbackPage } from '../pages/auth/GoogleCallbackPage';
 import { PlaceholderPage } from '../pages/PlaceholderPage';
+import { QuestionBanksPage } from '../pages/question-banks/QuestionBanksPage';
+import { QuestionBankDetailPage } from '../pages/question-banks/QuestionBankDetailPage';
 
 export const router = createBrowserRouter([
   {
@@ -55,12 +57,20 @@ export const router = createBrowserRouter([
         path: 'auth/callback',
         element: <GoogleCallbackPage />,
       },
-      // Protected Routes / Placeholders for Creator
+      // Protected Routes for Creator
       {
         path: 'question-banks',
         element: (
           <ProtectedRoute>
-            <PlaceholderPage title="Ngân hàng câu hỏi" />
+            <QuestionBanksPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'question-banks/:id',
+        element: (
+          <ProtectedRoute>
+            <QuestionBankDetailPage />
           </ProtectedRoute>
         ),
       },

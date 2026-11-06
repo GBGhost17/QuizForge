@@ -8,10 +8,10 @@ export interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isInitialized, isLoading } = useAuth();
   const location = useLocation();
 
-  if (isLoading) {
+  if (!isInitialized || isLoading) {
     return <LoadingSpinner fullPage label="Đang kiểm tra quyền truy cập..." />;
   }
 

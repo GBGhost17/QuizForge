@@ -2,7 +2,16 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../stores/auth.store';
 import type { AuthResponse } from '@quizforge/shared-types';
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api/v1';
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api/v1';
+
+export const refreshSessionRequest = async (): Promise<AuthResponse> => {
+  const response = await axios.post<AuthResponse>(
+    `${API_BASE_URL}/auth/refresh`,
+    {},
+    { withCredentials: true },
+  );
+  return response.data;
+};
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -88,13 +97,8 @@ apiClient.interceptors.response.use(
 
     try {
       // Call refresh endpoint with HttpOnly cookie automatically sent via credentials
-      const response = await axios.post<AuthResponse>(
-        `${API_BASE_URL}/auth/refresh`,
-        {},
-        { withCredentials: true },
-      );
-
-      const { accessToken: newAccessToken } = response.data;
+      const responseData = await refreshSessionRequest();
+      const { accessToken: newAccessToken } = responseData;
 
       // Update state with newly rotated token strictly in memory
       useAuthStore.getState().setAccessToken(newAccessToken);

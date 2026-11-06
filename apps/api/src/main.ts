@@ -25,7 +25,7 @@ async function bootstrap(): Promise<void> {
     .build();
   SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, config));
 
-  await app.listen(env.API_PORT);
+  await app.listen(env.API_PORT, '0.0.0.0');
 }
 
 void bootstrap();
