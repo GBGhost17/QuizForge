@@ -75,10 +75,13 @@ This file tracks incremental feature implementations, stage progressions (S00–
   - `apps/web`: Updated `ProtectedRoute` and `PublicOnlyRoute` to wait for session initialization (`isInitialized: true`) before performing redirects, preventing accidental logouts on page reload.
   - `apps/web`: Added `ProtectedRoute.test.tsx` (3 tests) and updated `auth.store.test.ts` to thoroughly verify session initialization and route guard behaviors.
   - `apps/web/vite.config.ts` & `apps/api/src/main.ts`: Bound API server to `0.0.0.0:3000` and updated Vite proxy to `http://127.0.0.1:3000` to prevent Windows IPv6 (`::1`) connection refused errors.
+  - `packages/validation/package.json`: Pointed package `types` directly to `./src/index.ts` so TypeScript consumers can resolve types instantly in clean environments without requiring pre-built `dist/`.
+  - `apps/api/src/modules/questions/questions.service.ts`: Added explicit parameter types for options mapping, eliminating `noImplicitAny` errors.
+  - `.github/workflows/ci.yml`: Added `Build Shared Packages` step right after `pnpm install` to guarantee shared library distribution files exist for tests.
 - **Validation**:
   - `pnpm format:check` — PASSED (Prettier).
   - `pnpm lint` — PASSED (0 errors, 0 warnings).
-  - `pnpm typecheck` — PASSED across all workspace packages and apps.
+  - `pnpm typecheck` — PASSED (verified cleanly even after deleting `packages/validation/dist`).
   - Unit tests: 155/155 PASSED (33 in validation, 71 in api, 51 in web).
   - `pnpm build` — PASSED (Vite + NestJS API).
-- **Next Step**: Commit, push to `feat/S05-question-bank-crud`, open PR for review & merge into `main`, then proceed to Stage S06 (Markdown import pipeline).
+- **Next Step**: Commit and push changes to `feat/S05-question-bank-crud`, verify green CI on GitHub, merge into `main`, and advance to Stage S06 (Markdown import pipeline).

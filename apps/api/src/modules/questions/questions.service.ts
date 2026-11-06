@@ -60,12 +60,22 @@ export class QuestionsService {
           defaultPoints: validated.defaultPoints || 1.0,
           rubric: validated.rubric ? (validated.rubric as Prisma.InputJsonValue) : Prisma.JsonNull,
           options: {
-            create: (validated.options || []).map((opt, idx) => ({
-              text: opt.text,
-              isCorrect: opt.isCorrect,
-              explanation: opt.explanation || null,
-              order: opt.order ?? idx,
-            })),
+            create: (validated.options || []).map(
+              (
+                opt: {
+                  text: string;
+                  isCorrect: boolean;
+                  explanation?: string | null;
+                  order?: number;
+                },
+                idx: number,
+              ) => ({
+                text: opt.text,
+                isCorrect: opt.isCorrect,
+                explanation: opt.explanation || null,
+                order: opt.order ?? idx,
+              }),
+            ),
           },
         },
         include: {
@@ -184,13 +194,23 @@ export class QuestionsService {
         });
 
         await tx.questionOption.createMany({
-          data: dto.options.map((opt, idx) => ({
-            questionId: id,
-            text: opt.text,
-            isCorrect: opt.isCorrect,
-            explanation: opt.explanation || null,
-            order: opt.order ?? idx,
-          })),
+          data: dto.options.map(
+            (
+              opt: {
+                text: string;
+                isCorrect: boolean;
+                explanation?: string | null;
+                order?: number;
+              },
+              idx: number,
+            ) => ({
+              questionId: id,
+              text: opt.text,
+              isCorrect: opt.isCorrect,
+              explanation: opt.explanation || null,
+              order: opt.order ?? idx,
+            }),
+          ),
         });
       }
 
