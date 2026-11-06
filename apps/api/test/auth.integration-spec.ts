@@ -99,14 +99,29 @@ describe('Auth Integration Tests (Stage S03)', () => {
 
   it('handles forgot-password and reset-password flow', async () => {
     const forgotRes = await authService.forgotPassword({ email: testEmail });
-    expect(forgotRes.resetToken).toBeDefined();
-    if (!forgotRes.resetToken) {
-      throw new Error('Expected resetToken to be defined');
-    }
+    expect(forgotRes.message).toContain('đặt lại mật khẩu');
+
+    // Verify token record was securely stored in database without leaking in API response
+    const dbTokenRecord = await prisma.passwordResetToken.findFirst({
+      where: { userId: createdUserId, usedAt: null },
+    });
+    expect(dbTokenRecord).toBeTruthy();
+    expect(dbTokenRecord?.tokenHash).toBeDefined();
+
+    // Test password reset using a known token
+    const rawResetToken = 'test-integration-reset-token-xyz';
+    const tokenHash = authService.hashToken(rawResetToken);
+    await prisma.passwordResetToken.create({
+      data: {
+        userId: createdUserId,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
 
     const newPassword = 'BrandNewPassword456';
     const resetRes = await authService.resetPassword({
-      token: forgotRes.resetToken,
+      token: rawResetToken,
       newPassword,
     });
     expect(resetRes.message).toContain('thành công');
