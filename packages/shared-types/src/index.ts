@@ -3,6 +3,8 @@
  * internals (see agent/rules/01-architecture.md).
  */
 
+export * from './auth';
+
 /** Response of GET /api/v1/health (liveness). */
 export interface HealthResponse {
   status: 'ok';
