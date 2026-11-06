@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useAuthStore, getStoredRefreshToken, setStoredRefreshToken } from './auth.store';
+import { useAuthStore } from './auth.store';
 
 describe('Auth Store (Zustand)', () => {
   beforeEach(() => {
-    localStorage.clear();
     useAuthStore.getState().clearAuth();
   });
 
@@ -21,8 +20,7 @@ describe('Auth Store (Zustand)', () => {
     expect(state.isAuthenticated).toBe(true);
   });
 
-  it('resets state and clears persistent refresh token upon clearAuth', () => {
-    setStoredRefreshToken('mock-refresh-token');
+  it('resets state strictly in memory upon clearAuth', () => {
     useAuthStore.getState().setAccessToken('mock-access-token');
 
     useAuthStore.getState().clearAuth();
@@ -30,14 +28,14 @@ describe('Auth Store (Zustand)', () => {
     const state = useAuthStore.getState();
     expect(state.accessToken).toBeNull();
     expect(state.isAuthenticated).toBe(false);
-    expect(getStoredRefreshToken()).toBeNull();
+    expect(state.isInitialized).toBe(true);
   });
 
-  it('stores and retrieves refresh token from localStorage', () => {
-    setStoredRefreshToken('persisted-token');
-    expect(getStoredRefreshToken()).toBe('persisted-token');
+  it('tracks initialization state via setInitialized', () => {
+    useAuthStore.setState({ isInitialized: false });
+    expect(useAuthStore.getState().isInitialized).toBe(false);
 
-    setStoredRefreshToken(null);
-    expect(getStoredRefreshToken()).toBeNull();
+    useAuthStore.getState().setInitialized(true);
+    expect(useAuthStore.getState().isInitialized).toBe(true);
   });
 });

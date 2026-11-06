@@ -187,6 +187,10 @@ export class AuthService {
    * Refreshes access token with rotation and reuse detection.
    */
   async refresh(dto: RefreshTokenDto): Promise<AuthResponse> {
+    if (!dto.refreshToken) {
+      throw new UnauthorizedException('Refresh token không được để trống');
+    }
+
     const tokenHash = this.hashToken(dto.refreshToken);
 
     const tokenRecord = await this.prisma.refreshToken.findUnique({
@@ -286,11 +290,8 @@ export class AuthService {
       },
     });
 
-    const isDevelopment = this.configService.get<string>('NODE_ENV') !== 'production';
-
     return {
       message: genericMessage,
-      ...(isDevelopment ? { resetToken: rawToken } : {}),
     };
   }
 

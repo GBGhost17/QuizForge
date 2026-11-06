@@ -33,6 +33,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
+      - name: Build Shared Packages
+        run: pnpm --filter "./packages/**" build
+
       - name: Setup Database & Generate Prisma Client
         env:
           DATABASE_URL: postgresql://quizforge:quizforge_dev_only@localhost:5432/quizforge?schema=public

@@ -57,34 +57,70 @@ describe('AuthController', () => {
     controller = module.get<AuthController>(AuthController);
   });
 
-  it('delegates register to AuthService', async () => {
+  it('delegates register to AuthService and sets cookie', async () => {
+    const mockRes = {
+      cookie: jest.fn(),
+    } as unknown as Response;
     const dto = {
       email: 'user@quizforge.local',
       password: 'ValidPassword123',
       name: 'Test User',
     };
-    const result = await controller.register(dto);
+    const result = await controller.register(dto, mockRes);
     expect(mockAuthService.register).toHaveBeenCalledWith(dto);
+    expect(mockRes.cookie).toHaveBeenCalledWith(
+      'refreshToken',
+      mockAuthResponse.refreshToken,
+      expect.objectContaining({ httpOnly: true, path: '/' }),
+    );
     expect(result).toBe(mockAuthResponse);
   });
 
-  it('delegates login to AuthService', async () => {
+  it('delegates login to AuthService and sets cookie', async () => {
+    const mockRes = {
+      cookie: jest.fn(),
+    } as unknown as Response;
     const dto = { email: 'user@quizforge.local', password: 'ValidPassword123' };
-    const result = await controller.login(dto);
+    const result = await controller.login(dto, mockRes);
     expect(mockAuthService.login).toHaveBeenCalledWith(dto);
+    expect(mockRes.cookie).toHaveBeenCalledWith(
+      'refreshToken',
+      mockAuthResponse.refreshToken,
+      expect.objectContaining({ httpOnly: true, path: '/' }),
+    );
     expect(result).toBe(mockAuthResponse);
   });
 
-  it('delegates refresh to AuthService', async () => {
-    const dto = { refreshToken: 'valid-token' };
-    const result = await controller.refresh(dto);
-    expect(mockAuthService.refresh).toHaveBeenCalledWith(dto);
+  it('delegates refresh to AuthService using cookie or dto and sets new cookie', async () => {
+    const mockRes = {
+      cookie: jest.fn(),
+    } as unknown as Response;
+    const mockReq = {
+      cookies: { refreshToken: 'valid-token' },
+    } as unknown as Request;
+    const result = await controller.refresh(mockReq, mockRes);
+    expect(mockAuthService.refresh).toHaveBeenCalledWith({ refreshToken: 'valid-token' });
+    expect(mockRes.cookie).toHaveBeenCalledWith(
+      'refreshToken',
+      mockAuthResponse.refreshToken,
+      expect.objectContaining({ httpOnly: true, path: '/' }),
+    );
     expect(result).toBe(mockAuthResponse);
   });
 
-  it('delegates logout to AuthService', async () => {
-    const result = await controller.logout('user-1', { refreshToken: 'rev-token' });
+  it('delegates logout to AuthService and clears cookie', async () => {
+    const mockRes = {
+      clearCookie: jest.fn(),
+    } as unknown as Response;
+    const mockReq = {
+      cookies: { refreshToken: 'rev-token' },
+    } as unknown as Request;
+    const result = await controller.logout('user-1', mockReq, mockRes);
     expect(mockAuthService.logout).toHaveBeenCalledWith('user-1', 'rev-token');
+    expect(mockRes.clearCookie).toHaveBeenCalledWith(
+      'refreshToken',
+      expect.objectContaining({ httpOnly: true, path: '/' }),
+    );
     expect(result).toEqual({ message: 'Đăng xuất thành công' });
   });
 
@@ -107,9 +143,10 @@ describe('AuthController', () => {
     expect(result).toBe(mockUserProfile);
   });
 
-  it('redirects to frontend callback with tokens on googleAuthCallback', async () => {
+  it('redirects to frontend callback and sets HttpOnly cookie on googleAuthCallback', async () => {
     const mockRes = {
       redirect: jest.fn(),
+      cookie: jest.fn(),
     } as unknown as Response;
     const mockReq = {
       user: mockAuthResponse,
@@ -117,10 +154,15 @@ describe('AuthController', () => {
 
     await controller.googleAuthCallback(mockReq, mockRes);
 
+    expect(mockRes.cookie).toHaveBeenCalledWith(
+      'refreshToken',
+      mockAuthResponse.refreshToken,
+      expect.objectContaining({ httpOnly: true, path: '/' }),
+    );
     expect(mockRes.redirect).toHaveBeenCalledWith(
       `http://localhost:5173/auth/callback?accessToken=${encodeURIComponent(
         mockAuthResponse.accessToken,
-      )}&refreshToken=${encodeURIComponent(mockAuthResponse.refreshToken)}`,
+      )}`,
     );
   });
 

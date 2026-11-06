@@ -4,6 +4,7 @@
  */
 
 export * from './auth';
+export * from './question-bank';
 
 /** Response of GET /api/v1/health (liveness). */
 export interface HealthResponse {

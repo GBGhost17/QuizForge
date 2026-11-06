@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import axios from 'axios';
 import { apiClient } from './api-client';
-import { useAuthStore, setStoredRefreshToken } from '../stores/auth.store';
+import { useAuthStore } from '../stores/auth.store';
 
 vi.mock('axios', async (importOriginal) => {
   const actual = await importOriginal<typeof import('axios')>();
@@ -16,7 +16,6 @@ vi.mock('axios', async (importOriginal) => {
 describe('API Client Interceptors', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
     useAuthStore.getState().clearAuth();
 
     // Mock axios adapter on apiClient to prevent real network calls in jsdom
@@ -69,8 +68,11 @@ describe('API Client Interceptors', () => {
     }
   });
 
-  it('clears auth on 401 when no refresh token is stored', async () => {
+  it('clears auth on 401 when refresh request fails', async () => {
     useAuthStore.getState().setAccessToken('expired-token');
+
+    const mockedPost = vi.mocked(axios.post);
+    mockedPost.mockRejectedValueOnce(new Error('Refresh cookie expired'));
 
     const responseInterceptor = apiClient.interceptors.response as unknown as {
       handlers: Array<{ rejected: (err: unknown) => Promise<unknown> }>;
@@ -85,21 +87,19 @@ describe('API Client Interceptors', () => {
         response: { status: 401 },
       };
 
-      await expect(errorHandler(mockError)).rejects.toEqual(mockError);
+      await expect(errorHandler(mockError)).rejects.toThrow();
       expect(useAuthStore.getState().accessToken).toBeNull();
       expect(useAuthStore.getState().isAuthenticated).toBe(false);
     }
   });
 
-  it('attempts token rotation upon 401 when refresh token is available', async () => {
-    setStoredRefreshToken('valid-refresh-token');
+  it('attempts token rotation upon 401 via HttpOnly cookie', async () => {
     useAuthStore.getState().setAccessToken('old-access-token');
 
     const mockedPost = vi.mocked(axios.post);
     mockedPost.mockResolvedValueOnce({
       data: {
         accessToken: 'new-rotated-access-token',
-        refreshToken: 'new-rotated-refresh-token',
         user: { id: 'u1', email: 'test@quizforge.local', name: 'Test', role: 'USER' },
       },
     });
@@ -117,9 +117,11 @@ describe('API Client Interceptors', () => {
 
       await errorHandler(mockError);
 
-      expect(mockedPost).toHaveBeenCalledWith(expect.stringContaining('/auth/refresh'), {
-        refreshToken: 'valid-refresh-token',
-      });
+      expect(mockedPost).toHaveBeenCalledWith(
+        expect.stringContaining('/auth/refresh'),
+        {},
+        { withCredentials: true },
+      );
       expect(useAuthStore.getState().accessToken).toBe('new-rotated-access-token');
     }
   });

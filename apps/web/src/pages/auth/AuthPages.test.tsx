@@ -9,7 +9,7 @@ import { ForgotPasswordPage } from './ForgotPasswordPage';
 import { ResetPasswordPage } from './ResetPasswordPage';
 import { GoogleCallbackPage } from './GoogleCallbackPage';
 import { apiClient } from '../../lib/api-client';
-import { useAuthStore, getStoredRefreshToken } from '../../stores/auth.store';
+import { useAuthStore } from '../../stores/auth.store';
 
 describe('Auth Pages Integration', () => {
   let queryClient: QueryClient;
@@ -262,18 +262,17 @@ describe('Auth Pages Integration', () => {
   });
 
   describe('GoogleCallbackPage', () => {
-    it('processes tokens from URL, updates store, and redirects to home', async () => {
+    it('processes accessToken from URL, updates store in memory, and redirects to home', async () => {
       renderWithProviders(
         <Routes>
           <Route path="/auth/callback" element={<GoogleCallbackPage />} />
           <Route path="/" element={<div>Trang chủ từ OAuth</div>} />
         </Routes>,
-        ['/auth/callback?accessToken=google-acc-token&refreshToken=google-ref-token'],
+        ['/auth/callback?accessToken=google-acc-token'],
       );
 
       await waitFor(() => {
         expect(useAuthStore.getState().accessToken).toBe('google-acc-token');
-        expect(getStoredRefreshToken()).toBe('google-ref-token');
         expect(screen.getByText('Trang chủ từ OAuth')).toBeTruthy();
       });
     });

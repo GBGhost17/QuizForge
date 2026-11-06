@@ -3,7 +3,7 @@ import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { type ReactNode } from 'react';
 import { useAuth } from './useAuth';
-import { useAuthStore, getStoredRefreshToken } from '../stores/auth.store';
+import { useAuthStore } from '../stores/auth.store';
 import { apiClient } from '../lib/api-client';
 
 describe('useAuth hook', () => {
@@ -23,7 +23,6 @@ describe('useAuth hook', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
     useAuthStore.getState().clearAuth();
 
     // Mock axios adapter on apiClient to prevent real network calls
@@ -43,7 +42,7 @@ describe('useAuth hook', () => {
     expect(result.current.isAuthenticated).toBe(false);
   });
 
-  it('performs login and updates both store and query state', async () => {
+  it('performs login and updates both store and query state strictly in memory', async () => {
     const mockAuthResponse = {
       accessToken: 'login-access-tok',
       refreshToken: 'login-refresh-tok',
@@ -78,7 +77,6 @@ describe('useAuth hook', () => {
 
     expect(useAuthStore.getState().accessToken).toBe('login-access-tok');
     expect(useAuthStore.getState().isAuthenticated).toBe(true);
-    expect(getStoredRefreshToken()).toBe('login-refresh-tok');
     expect(result.current.user).toEqual(mockAuthResponse.user);
 
     postSpy.mockRestore();
@@ -96,7 +94,7 @@ describe('useAuth hook', () => {
       await result.current.logout();
     });
 
-    expect(postSpy).toHaveBeenCalledWith('/auth/logout', expect.any(Object));
+    expect(postSpy).toHaveBeenCalledWith('/auth/logout');
     expect(useAuthStore.getState().accessToken).toBeNull();
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
 
