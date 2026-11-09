@@ -12,3 +12,10 @@ playwright-report/
 test-results/
 apps/api/src/generated/
 .agent/
+
+# Documentation & agent logs
+docs/
+AGENTS.md
+DEV-LOG.md
+progress.md
+
