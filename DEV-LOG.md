@@ -217,3 +217,59 @@ This file tracks incremental feature implementations, stage progressions (S00–
   - `pnpm --filter @quizforge/web test --run` — PASSED (67/67 web tests).
   - `pnpm --filter @quizforge/api test -- src/` — PASSED (84/84 api unit tests).
 - **Next Step**: Await user instructions or proceed to Stage S07.
+
+### [2026-11-09] Optimization - UI/UX Layout, Auth Sanitization & Responsive Polish
+
+- **Branch**: `dev-optimization`
+- **Changes**:
+  - `apps/web/src/components/layout/Navbar.tsx`: Raised header z-index to `z-50` with sticky positioning and backdrop blur to guarantee the logo and navbar are never overlapped by sidebar drawers or scrolling.
+  - `apps/web/src/components/layout/Sidebar.tsx`: Pinned mobile sidebar drawer and backdrop to `top-16` with `z-40`, eliminating overlap over the navbar/logo. Added mobile role-switcher buttons (`Giáo viên` / `Học sinh`) inside the sidebar workspace card so mobile users can switch roles conveniently.
+  - `apps/web/src/pages/auth/LoginPage.tsx`: Repositioned the "Quên mật khẩu?" link directly below the password input field aligned to the right. Added helper guidance for English-only input.
+  - `apps/web/src/lib/input-sanitizers.ts`: Built utility functions (`removeVietnameseTones`, `sanitizeEnglishEmail`, `sanitizeEnglishPassword`, `sanitizeEnglishName`, `sanitizeEnglishAlphanumeric`) to automatically normalize Vietnamese IME/Telex accents into clean English ASCII letters in real-time, preventing input errors and broken tokens during authentication.
+  - `apps/web/src/pages/auth/RegisterPage.tsx`, `ForgotPasswordPage.tsx`, `ResetPasswordPage.tsx`: Integrated input sanitizers across all auth forms with `lang="en"`, `autoCapitalize="none"`, and `spellCheck={false}`.
+  - Responsive Mobile Polish: Upgraded action buttons in `QuestionBankDetailPage.tsx`, `QuestionBanksPage.tsx`, and `MarkdownImportPage.tsx` with mobile-first responsive label collapse (showing icons with tooltips on small screens and full text on desktop).
+  - Tests: Added comprehensive unit tests in `input-sanitizers.test.ts`, `AuthPages.test.tsx`, and `Layout.test.tsx` (all 80 web tests passing).
+- **Validation**:
+  - `pnpm format:check` — PASSED (Prettier).
+  - `pnpm lint` — PASSED (0 errors, 0 warnings).
+  - `pnpm typecheck` — PASSED (all workspace projects).
+  - `pnpm --filter @quizforge/web test --run` — PASSED (80/80 tests across 12 suites).
+  - `pnpm build` — PASSED (Vite + NestJS production build).
+- **Next Step**: Await user command to commit/push or proceed.
+
+### [2026-11-09] Optimization - Fixed Sticky Sidebar & Clean Production UI (Removed Stage Badges)
+
+- **Branch**: `dev-optimization`
+- **Changes**:
+  - `apps/web/src/components/layout/Sidebar.tsx`: Pinned sidebar with `md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:shrink-0` and `flex flex-col h-full`, completely preventing the sidebar from scrolling away or sliding out of view. Added quick role toggle buttons and user profile summary card at the bottom so all workspace and account information is fully displayed without clipping.
+  - `apps/web/src/components/layout/MainLayout.tsx`: Updated body container layout to `flex flex-1 items-start` and `<main className="flex-1 min-w-0 ...">`, allowing content to scroll smoothly beside the rock-solid fixed sidebar.
+  - `apps/web/src/pages/import/MarkdownImportPage.tsx`: Removed internal development process tag (`<Badge>Stage S06</Badge>`), ensuring a clean and professional user-facing UI.
+  - `apps/web/src/pages/HomePage.tsx`: Replaced development scaffolding texts (`Scaffold · Stage S01` and `features arrive in later stages`) with production-ready Vietnamese platform descriptions.
+- **Validation**:
+  - `pnpm format:check` — PASSED (Prettier).
+  - `pnpm lint` — PASSED (0 errors, 0 warnings).
+  - `pnpm typecheck` — PASSED (all workspace projects).
+  - `pnpm --filter @quizforge/web test --run` — PASSED (80/80 tests across 12 test suites).
+  - `pnpm build` — PASSED (Vite + NestJS production build).
+- **Next Step**: Await user command to commit/push or proceed.
+
+### [2026-11-09] Optimization - Role Label Refinement (Soạn đề / Làm bài), Clean Import Header & Empty Input State
+
+- **Branch**: `dev-optimization`
+- **Changes**:
+  - Global Role Terminology: Refined role names from "Giáo viên / Học sinh" to "Soạn đề / Làm bài" across workspace tags and navigation switchers.
+  - `apps/web/src/components/layout/Navbar.tsx`: Removed the redundant role-switch dropdown from Navbar; kept brand logo, user profile and logout actions.
+  - `apps/web/src/components/layout/Sidebar.tsx`: Dedicated role switcher to Sidebar only ("Soạn đề" / "Làm bài"). Removed redundant user card from the bottom of sidebar to prioritize account information in Navbar.
+  - `apps/web/src/pages/import/MarkdownImportPage.tsx`:
+    - Removed unnecessary back button (`<ArrowLeft />`), giving a cleaner, streamlined header.
+    - Set initial markdown editor content to empty string (`''`) instead of pre-populating with sample markdown template.
+    - Exported `SAMPLE_MARKDOWN_TEMPLATE` constant for reusable testing/reference.
+  - `apps/web/src/pages/DashboardPage.tsx`: Updated workspace headers to "Không gian Soạn đề" / "Không gian Làm bài".
+  - Tests: Updated `Layout.test.tsx` and `MarkdownImportPage.test.tsx` (all 79 web tests passing).
+- **Validation**:
+  - `pnpm format:check` — PASSED (Prettier).
+  - `pnpm lint` — PASSED (0 errors, 0 warnings).
+  - `pnpm typecheck` — PASSED (all workspace projects).
+  - `pnpm --filter @quizforge/web test --run` — PASSED (79/79 tests across 12 suites).
+  - `pnpm build` — PASSED (Vite + NestJS production build).
+- **Next Step**: Await user command to commit/push or proceed.

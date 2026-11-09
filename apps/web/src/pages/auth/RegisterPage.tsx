@@ -3,6 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
 import { RegisterSchema } from '@quizforge/validation';
 import { useAuth } from '../../hooks/useAuth';
+import {
+  sanitizeEnglishName,
+  sanitizeEnglishEmail,
+  sanitizeEnglishPassword,
+} from '../../lib/input-sanitizers';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import {
@@ -81,23 +86,29 @@ export function RegisterPage() {
             <Input
               id="name"
               label="Họ và tên"
-              placeholder="Nguyễn Văn A"
+              placeholder="Nguyen Van A"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => setName(sanitizeEnglishName(e.target.value))}
               required
               autoComplete="name"
               autoFocus
+              lang="en"
+              autoCapitalize="words"
+              spellCheck={false}
             />
 
             <Input
               id="email"
               type="email"
               label="Địa chỉ Email"
-              placeholder="ten@vidu.com"
+              placeholder="user@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setEmail(sanitizeEnglishEmail(e.target.value))}
               required
               autoComplete="email"
+              lang="en"
+              autoCapitalize="none"
+              spellCheck={false}
             />
 
             <Input
@@ -105,11 +116,14 @@ export function RegisterPage() {
               type="password"
               label="Mật khẩu"
               placeholder="Tối thiểu 8 ký tự, có chữ hoa và số"
-              helperText="Yêu cầu: Tối thiểu 8 ký tự, có ít nhất 1 chữ hoa và 1 chữ số"
+              helperText="Yêu cầu: Tối thiểu 8 ký tự, có ít nhất 1 chữ hoa và 1 chữ số (ký tự tiếng Anh)"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => setPassword(sanitizeEnglishPassword(e.target.value))}
               required
               autoComplete="new-password"
+              lang="en"
+              autoCapitalize="none"
+              spellCheck={false}
             />
 
             <Input
@@ -118,9 +132,12 @@ export function RegisterPage() {
               label="Xác nhận mật khẩu"
               placeholder="Nhập lại mật khẩu"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => setConfirmPassword(sanitizeEnglishPassword(e.target.value))}
               required
               autoComplete="new-password"
+              lang="en"
+              autoCapitalize="none"
+              spellCheck={false}
             />
 
             <Button

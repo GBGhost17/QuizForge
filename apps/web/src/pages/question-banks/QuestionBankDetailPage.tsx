@@ -176,8 +176,15 @@ export function QuestionBankDetailPage() {
 
           <div className="flex items-center gap-2 self-start md:self-auto">
             <Link to={`/question-banks/${bank.id}/import`}>
-              <Button variant="outline" size="sm" className="flex items-center gap-1.5">
-                <Upload className="h-4 w-4" /> Import Markdown
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1.5"
+                title="Import Markdown"
+                aria-label="Import Markdown"
+              >
+                <Upload className="h-4 w-4" />
+                <span className="hidden sm:inline">Import Markdown</span>
               </Button>
             </Link>
             <Button
@@ -188,8 +195,11 @@ export function QuestionBankDetailPage() {
                 setIsEditorOpen(true);
               }}
               className="flex items-center gap-1.5"
+              title="Thêm câu hỏi"
+              aria-label="Thêm câu hỏi"
             >
-              <Plus className="h-4 w-4" /> Thêm câu hỏi
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Thêm câu hỏi</span>
             </Button>
           </div>
         </div>

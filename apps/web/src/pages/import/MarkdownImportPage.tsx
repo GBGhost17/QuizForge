@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
-  ArrowLeft,
   Upload,
   CheckCircle2,
   AlertCircle,
@@ -27,7 +26,7 @@ import { GeneratePromptModal } from '../../components/import/GeneratePromptModal
 import { SelectTargetBankModal } from '../../components/import/SelectTargetBankModal';
 import type { ParsedQuestion, ImportDiagnostic } from '@quizforge/shared-types';
 
-const SAMPLE_MARKDOWN_TEMPLATE = `---
+export const SAMPLE_MARKDOWN_TEMPLATE = `---
 title: Ngân hàng mẫu Kiểm tra Kiến thức
 description: Bộ câu hỏi kiểm tra đầy đủ 5 dạng chuẩn QuizForge
 subject: Khoa học máy tính
@@ -97,7 +96,7 @@ export function MarkdownImportPage() {
   const { data: bank, isLoading: isBankLoading } = useQuestionBank(bankId || '');
   const { parse, isParsing, parseResult, commit, isCommitting } = useMarkdownImport();
 
-  const [content, setContent] = useState(SAMPLE_MARKDOWN_TEMPLATE);
+  const [content, setContent] = useState('');
   const [showDifficulty, setShowDifficulty] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [isSelectBankModalOpen, setIsSelectBankModalOpen] = useState(false);
@@ -238,40 +237,30 @@ export function MarkdownImportPage() {
     <div className="flex flex-col min-h-[calc(100vh-4rem)] p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-        <div className="flex items-center space-x-3">
-          <Link to={bankId ? `/question-banks/${bankId}` : '/question-banks'}>
-            <Button variant="ghost" size="sm" className="p-2">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
-                Nhập câu hỏi từ Markdown
-              </h1>
-              <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
-                Stage S06
-              </Badge>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-500">
-              Ngân hàng đích:{' '}
-              {bank ? (
-                <>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    {bank.title}
-                  </span>{' '}
-                  ({bank._count?.questions || 0} câu hiện tại)
-                </>
-              ) : (
-                <span className="text-indigo-600 dark:text-indigo-400 font-medium">
-                  Chưa chọn (sẽ chọn ngân hàng khi lưu)
-                </span>
-              )}
-            </p>
+        <div>
+          <div className="flex items-center space-x-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
+              Nhập câu hỏi từ Markdown
+            </h1>
           </div>
+          <p className="text-xs sm:text-sm text-slate-500">
+            Ngân hàng đích:{' '}
+            {bank ? (
+              <>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  {bank.title}
+                </span>{' '}
+                ({bank._count?.questions || 0} câu hiện tại)
+              </>
+            ) : (
+              <span className="text-indigo-600 dark:text-indigo-400 font-medium">
+                Chưa chọn (sẽ chọn ngân hàng khi lưu)
+              </span>
+            )}
+          </p>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 sm:space-x-3">
           <label className="cursor-pointer">
             <input
               type="file"
@@ -279,9 +268,13 @@ export function MarkdownImportPage() {
               className="sr-only"
               onChange={handleFileUpload}
             />
-            <span className="inline-flex items-center justify-center font-medium transition-colors cursor-pointer border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 h-8 px-3 text-xs rounded-md shadow-xs">
-              <Upload className="h-4 w-4 mr-2" />
-              Tải tệp .md
+            <span
+              className="inline-flex items-center justify-center font-medium transition-colors cursor-pointer border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 h-8 px-2 sm:px-3 text-xs rounded-md shadow-xs"
+              title="Tải tệp .md"
+              aria-label="Tải tệp .md"
+            >
+              <Upload className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Tải tệp .md</span>
             </span>
           </label>
 
@@ -289,23 +282,31 @@ export function MarkdownImportPage() {
             variant="outline"
             size="sm"
             onClick={() => setIsPromptModalOpen(true)}
-            className="border-indigo-200 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100 dark:border-indigo-800 dark:text-indigo-300 dark:bg-indigo-950/40"
+            className="border-indigo-200 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100 dark:border-indigo-800 dark:text-indigo-300 dark:bg-indigo-950/40 px-2 sm:px-3"
+            title="Tạo Prompt AI"
+            aria-label="Tạo Prompt AI"
           >
-            <Sparkles className="h-4 w-4 mr-2 text-indigo-600 dark:text-indigo-400" />
-            Tạo Prompt AI
+            <Sparkles className="h-4 w-4 sm:mr-2 text-indigo-600 dark:text-indigo-400" />
+            <span className="hidden sm:inline">Tạo Prompt AI</span>
           </Button>
 
           <Button
             onClick={handleCommit}
             disabled={!canCommit}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm px-2.5 sm:px-3 text-xs sm:text-sm"
+            title="Nhập vào ngân hàng"
           >
             {isCommitting ? (
-              <LoadingSpinner size="sm" className="mr-2" />
+              <LoadingSpinner size="sm" className="sm:mr-2" />
             ) : (
-              <Check className="h-4 w-4 mr-2" />
+              <Check className="h-4 w-4 sm:mr-2" />
             )}
-            Nhập {questions.length > 0 ? `${questions.length} câu` : ''} vào ngân hàng
+            <span className="hidden sm:inline">
+              Nhập {questions.length > 0 ? `${questions.length} câu ` : ''}vào ngân hàng
+            </span>
+            <span className="sm:hidden">
+              Nhập {questions.length > 0 ? `(${questions.length})` : ''}
+            </span>
           </Button>
         </div>
       </div>
@@ -343,9 +344,12 @@ export function MarkdownImportPage() {
                 size="sm"
                 onClick={() => handleParse()}
                 disabled={isParsing || !content.trim()}
+                title="Phân tích & Xem trước"
+                aria-label="Phân tích & Xem trước"
               >
                 {isParsing ? <LoadingSpinner size="sm" className="mr-1.5" /> : null}
-                Phân tích & Xem trước
+                <span className="hidden sm:inline">Phân tích & Xem trước</span>
+                <span className="sm:hidden">Phân tích</span>
               </Button>
             </CardHeader>
             <CardContent className="p-0">

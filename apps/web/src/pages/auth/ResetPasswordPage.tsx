@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Lock, CheckCircle2 } from 'lucide-react';
 import { ResetPasswordSchema } from '@quizforge/validation';
+import { sanitizeEnglishAlphanumeric, sanitizeEnglishPassword } from '../../lib/input-sanitizers';
 import { apiClient } from '../../lib/api-client';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -99,8 +100,12 @@ export function ResetPasswordPage() {
                   label="Mã xác thực Token"
                   placeholder="Nhập mã token nhận được"
                   value={token}
-                  onChange={(e) => setToken(e.target.value)}
+                  onChange={(e) => setToken(sanitizeEnglishAlphanumeric(e.target.value))}
                   required
+                  lang="en"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  helperText="Chỉ chứa ký tự tiếng Anh và số"
                 />
 
                 <Input
@@ -108,11 +113,14 @@ export function ResetPasswordPage() {
                   type="password"
                   label="Mật khẩu mới"
                   placeholder="Tối thiểu 8 ký tự, có chữ hoa và số"
-                  helperText="Yêu cầu: Tối thiểu 8 ký tự, có ít nhất 1 chữ hoa và 1 chữ số"
+                  helperText="Yêu cầu: Tối thiểu 8 ký tự, có ít nhất 1 chữ hoa và 1 chữ số (ký tự tiếng Anh)"
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
+                  onChange={(e) => setNewPassword(sanitizeEnglishPassword(e.target.value))}
                   required
                   autoComplete="new-password"
+                  lang="en"
+                  autoCapitalize="none"
+                  spellCheck={false}
                 />
 
                 <Input
@@ -121,9 +129,12 @@ export function ResetPasswordPage() {
                   label="Xác nhận mật khẩu mới"
                   placeholder="Nhập lại mật khẩu mới"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => setConfirmPassword(sanitizeEnglishPassword(e.target.value))}
                   required
                   autoComplete="new-password"
+                  lang="en"
+                  autoCapitalize="none"
+                  spellCheck={false}
                 />
 
                 <Button

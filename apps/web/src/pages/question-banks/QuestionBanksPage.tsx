@@ -71,9 +71,12 @@ export function QuestionBanksPage() {
             setIsModalOpen(true);
           }}
           className="flex items-center gap-2 self-start sm:self-auto"
+          title="Tạo ngân hàng mới"
+          aria-label="Tạo ngân hàng mới"
         >
           <Plus className="h-4 w-4" />
-          <span>Tạo ngân hàng mới</span>
+          <span className="hidden sm:inline">Tạo ngân hàng mới</span>
+          <span className="sm:hidden">Tạo mới</span>
         </Button>
       </div>
 

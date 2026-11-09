@@ -15,14 +15,12 @@ export function HomePage() {
       <header className="border-b border-neutral-200 bg-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <span className="text-lg font-semibold">QuizForge</span>
-          <span className="text-sm text-neutral-500">Scaffold · Stage S01</span>
+          <span className="text-sm text-neutral-500">Nền tảng kiểm tra trực tuyến</span>
         </div>
       </header>
       <main id="main" className="mx-auto max-w-3xl px-4 py-8">
         <h1 className="text-2xl font-bold sm:text-3xl">QuizForge scaffold is ready</h1>
-        <p className="mt-2 text-neutral-600">
-          Responsive shell only. Product features arrive in later stages.
-        </p>
+        <p className="mt-2 text-neutral-600">Hệ thống khảo sát và tạo bài thi trực tuyến.</p>
         <section aria-labelledby="api-status" className="mt-6 rounded-lg border bg-white p-4">
           <h2 id="api-status" className="font-semibold">
             Backend status
