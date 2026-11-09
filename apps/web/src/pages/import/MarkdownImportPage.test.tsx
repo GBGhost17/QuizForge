@@ -155,11 +155,11 @@ describe('MarkdownImportPage', () => {
 
     expect(screen.getByText('Xem trước câu hỏi (1 câu hợp lệ)')).toBeTruthy();
     expect(screen.getByText('Trắc nghiệm 1 đáp án')).toBeTruthy();
-    expect(screen.queryByText('Dễ')).toBeNull(); // Mặc định không hiện nhãn độ khó
+    expect(screen.getByText('Dễ')).toBeTruthy(); // Mặc định hiển thị nhãn độ khó
 
-    // Bật tùy chọn hiển thị nhãn độ khó
+    // Tắt tùy chọn hiển thị nhãn độ khó
     fireEvent.click(screen.getByLabelText(/hiện nhãn độ khó/i));
-    expect(screen.getByText('Dễ')).toBeTruthy();
+    expect(screen.queryByText('Dễ')).toBeNull();
 
     expect(screen.getByText('Dòng 5')).toBeTruthy();
   });

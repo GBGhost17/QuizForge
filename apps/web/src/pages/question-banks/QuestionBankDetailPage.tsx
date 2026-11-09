@@ -38,7 +38,7 @@ export function QuestionBankDetailPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<QuestionType | undefined>(undefined);
   const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | undefined>(undefined);
-  const [showDifficulty, setShowDifficulty] = useState(false);
+  const [showDifficulty, setShowDifficulty] = useState(true);
   const [page, setPage] = useState(1);
 
   // Modals

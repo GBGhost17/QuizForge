@@ -5,6 +5,7 @@ import { Label } from '../ui/label';
 import { useQuestionBanks } from '../../hooks/useQuestionBanks';
 import { useQuestions } from '../../hooks/useQuestions';
 import { Check, CheckSquare, Search, Square, X } from 'lucide-react';
+import type { Difficulty } from '@quizforge/shared-types';
 
 interface QuestionPickerModalProps {
   isOpen: boolean;
@@ -23,8 +24,9 @@ export function QuestionPickerModal({
 }: QuestionPickerModalProps) {
   const [selectedBankId, setSelectedBankId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | undefined>(undefined);
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<string>>(new Set());
-  const [defaultPoints, setDefaultPoints] = useState<number>(1.0);
+  const [defaultPoints] = useState<number>(1.0);
   const [error, setError] = useState<string | null>(null);
 
   const { data: banksData, isLoading: isLoadingBanks } = useQuestionBanks({ limit: 100 });
@@ -35,10 +37,45 @@ export function QuestionPickerModal({
 
   const { data: questionsData, isLoading: isLoadingQuestions } = useQuestions(activeBankId, {
     q: searchTerm || undefined,
+    difficulty: difficultyFilter,
     limit: 100,
   });
 
   const questions = questionsData?.data || [];
+
+  const getDifficultyBadge = (difficulty?: string) => {
+    switch (difficulty) {
+      case 'EASY':
+        return (
+          <span
+            data-testid="difficulty-badge"
+            className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+          >
+            Dễ
+          </span>
+        );
+      case 'MEDIUM':
+        return (
+          <span
+            data-testid="difficulty-badge"
+            className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-400"
+          >
+            Trung bình
+          </span>
+        );
+      case 'HARD':
+        return (
+          <span
+            data-testid="difficulty-badge"
+            className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-950/50 dark:text-rose-400"
+          >
+            Khó
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -147,19 +184,22 @@ export function QuestionPickerModal({
           </div>
 
           <div>
-            <Label htmlFor="default-points" className="text-xs">
-              Điểm số áp dụng mỗi câu
+            <Label htmlFor="difficulty-filter" className="text-xs">
+              Mức độ khó
             </Label>
-            <Input
-              id="default-points"
-              type="number"
-              step="0.1"
-              min="0.1"
-              max="100"
-              value={defaultPoints}
-              onChange={(e) => setDefaultPoints(Number(e.target.value) || 1.0)}
-              className="mt-1 text-sm"
-            />
+            <select
+              id="difficulty-filter"
+              value={difficultyFilter || ''}
+              onChange={(e) =>
+                setDifficultyFilter((e.target.value as Difficulty) || undefined)
+              }
+              className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            >
+              <option value="">Tất cả mức độ</option>
+              <option value="EASY">Dễ</option>
+              <option value="MEDIUM">Trung bình</option>
+              <option value="HARD">Khó</option>
+            </select>
           </div>
         </div>
 
@@ -233,6 +273,7 @@ export function QuestionPickerModal({
                       <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-300">
                         {q.type}
                       </span>
+                      {getDifficultyBadge(q.difficulty)}
                       {isAlreadyIn && (
                         <span className="text-xs text-amber-600 dark:text-amber-400">
                           (Đã có trong đề)

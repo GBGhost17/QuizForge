@@ -97,7 +97,7 @@ export function MarkdownImportPage() {
   const { parse, isParsing, parseResult, commit, isCommitting } = useMarkdownImport();
 
   const [content, setContent] = useState('');
-  const [showDifficulty, setShowDifficulty] = useState(false);
+  const [showDifficulty, setShowDifficulty] = useState(true);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [isSelectBankModalOpen, setIsSelectBankModalOpen] = useState(false);
   const [commitSuccessMessage, setCommitSuccessMessage] = useState<string | null>(null);
@@ -596,7 +596,7 @@ export function MarkdownImportPage() {
 function QuestionPreviewCard({
   question: q,
   index,
-  showDifficulty = false,
+  showDifficulty = true,
 }: {
   question: ParsedQuestion;
   index: number;

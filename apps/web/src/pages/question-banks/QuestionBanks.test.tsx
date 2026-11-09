@@ -208,12 +208,12 @@ describe('Question Banks Feature Integration', () => {
       expect(screen.getByText('Hà Nội')).toBeTruthy();
       expect(screen.getByText('TP. Hồ Chí Minh')).toBeTruthy();
 
-      // Mặc định ẩn nhãn độ khó
-      expect(screen.queryAllByTestId('difficulty-badge')).toHaveLength(0);
-
-      // Khi bật tùy chọn hiển thị
-      fireEvent.click(screen.getByLabelText(/hiện nhãn độ khó/i));
+      // Mặc định hiển thị nhãn độ khó
       expect(screen.getAllByTestId('difficulty-badge')).toHaveLength(2);
+
+      // Khi tắt tùy chọn hiển thị
+      fireEvent.click(screen.getByLabelText(/hiện nhãn độ khó/i));
+      expect(screen.queryAllByTestId('difficulty-badge')).toHaveLength(0);
     });
 
     it('opens question editor modal when clicking "Thêm câu hỏi"', async () => {

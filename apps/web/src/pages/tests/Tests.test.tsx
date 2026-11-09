@@ -171,7 +171,15 @@ describe('Tests & Test Builder Feature Integration (Stage S07)', () => {
       if (config.url === '/question-banks/bank-1/questions' && config.method === 'get') {
         return {
           data: {
-            data: [{ id: 'q-2', prompt: 'Hàm số đồng biến khi nào?', options: [] }],
+            data: [
+              {
+                id: 'q-2',
+                prompt: 'Hàm số đồng biến khi nào?',
+                type: 'SINGLE_CHOICE',
+                difficulty: 'EASY',
+                options: [],
+              },
+            ],
             meta: { page: 1, limit: 100, total: 1, totalPages: 1 },
           },
           status: 200,
@@ -288,6 +296,24 @@ describe('Tests & Test Builder Feature Integration (Stage S07)', () => {
       expect(
         await screen.findByText(/Đã tự động cân bằng tròn đúng 10 điểm cho 1 câu/i),
       ).toBeTruthy();
+    });
+
+    it('displays difficulty badges in QuestionPickerModal when selecting questions from bank', async () => {
+      renderWithProviders(
+        <Routes>
+          <Route path="/tests/:id/edit" element={<TestEditorPage />} />
+        </Routes>,
+        ['/tests/test-1/edit'],
+      );
+
+      expect(await screen.findByDisplayValue('Đề thi thử Toán 12')).toBeTruthy();
+
+      const addQuestionsBtn = screen.getByRole('button', { name: /Thêm câu hỏi từ ngân hàng/i });
+      fireEvent.click(addQuestionsBtn);
+
+      expect(await screen.findByText('Thêm câu hỏi từ ngân hàng')).toBeTruthy();
+      expect(await screen.findByText('Hàm số đồng biến khi nào?')).toBeTruthy();
+      expect(screen.getByTestId('difficulty-badge').textContent).toContain('Dễ');
     });
   });
 });
