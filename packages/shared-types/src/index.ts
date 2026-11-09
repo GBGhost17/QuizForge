@@ -6,6 +6,7 @@
 export * from './auth';
 export * from './question-bank';
 export * from './markdown-import';
+export * from './test';
 
 /** Response of GET /api/v1/health (liveness). */
 export interface HealthResponse {

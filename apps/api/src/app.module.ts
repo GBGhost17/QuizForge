@@ -5,6 +5,7 @@ import { HealthModule } from './modules/health/health.module';
 import { QuestionBanksModule } from './modules/question-banks/question-banks.module';
 import { QuestionsModule } from './modules/questions/questions.module';
 import { ImportsModule } from './modules/imports/imports.module';
+import { TestsModule } from './modules/tests/tests.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -18,6 +19,7 @@ import { PrismaModule } from './prisma/prisma.module';
     QuestionBanksModule,
     QuestionsModule,
     ImportsModule,
+    TestsModule,
   ],
 })
 export class AppModule {}

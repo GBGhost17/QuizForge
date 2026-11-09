@@ -12,6 +12,9 @@ import { PlaceholderPage } from '../pages/PlaceholderPage';
 import { QuestionBanksPage } from '../pages/question-banks/QuestionBanksPage';
 import { QuestionBankDetailPage } from '../pages/question-banks/QuestionBankDetailPage';
 import { MarkdownImportPage } from '../pages/import/MarkdownImportPage';
+import { TestsPage } from '../pages/tests/TestsPage';
+import { TestEditorPage } from '../pages/tests/TestEditorPage';
+import { TestDetailPage } from '../pages/tests/TestDetailPage';
 
 export const router = createBrowserRouter([
   {
@@ -87,7 +90,23 @@ export const router = createBrowserRouter([
         path: 'tests',
         element: (
           <ProtectedRoute>
-            <PlaceholderPage title="Quản lý đề thi & Xuất bản" />
+            <TestsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'tests/:id',
+        element: (
+          <ProtectedRoute>
+            <TestDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'tests/:id/edit',
+        element: (
+          <ProtectedRoute>
+            <TestEditorPage />
           </ProtectedRoute>
         ),
       },
