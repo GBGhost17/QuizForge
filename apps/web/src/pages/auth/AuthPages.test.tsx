@@ -125,9 +125,50 @@ describe('Auth Pages Integration', () => {
 
       postSpy.mockRestore();
     });
+
+    it('sanitizes Vietnamese IME diacritics into English ASCII on login inputs', () => {
+      renderWithProviders(<LoginPage />);
+
+      const emailInput = screen.getByLabelText(/địa chỉ email/i) as HTMLInputElement;
+      const passwordInput = screen.getByLabelText(/mật khẩu/i) as HTMLInputElement;
+
+      fireEvent.change(emailInput, { target: { value: 'nguyễn.đạt@vidu.vn' } });
+      expect(emailInput.value).toBe('nguyen.dat@vidu.vn');
+
+      fireEvent.change(passwordInput, { target: { value: 'MậtKhẩu123!' } });
+      expect(passwordInput.value).toBe('MatKhau123!');
+    });
+
+    it('renders "Quên mật khẩu?" link below the password input', () => {
+      renderWithProviders(<LoginPage />);
+
+      const passwordInput = screen.getByLabelText(/mật khẩu/i);
+      const forgotLink = screen.getByRole('link', { name: /quên mật khẩu\?/i });
+
+      // Verify DOM position: forgotLink appears after passwordInput in DOM order
+      expect(
+        passwordInput.compareDocumentPosition(forgotLink) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
   });
 
   describe('RegisterPage', () => {
+    it('sanitizes Vietnamese input to English characters in register fields', () => {
+      renderWithProviders(<RegisterPage />);
+
+      const nameInput = screen.getByLabelText(/họ và tên/i) as HTMLInputElement;
+      const emailInput = screen.getByLabelText(/địa chỉ email/i) as HTMLInputElement;
+      const passwordInput = screen.getByLabelText(/^mật khẩu/i) as HTMLInputElement;
+
+      fireEvent.change(nameInput, { target: { value: 'Nguyễn Văn Đạt' } });
+      expect(nameInput.value).toBe('Nguyen Van Dat');
+
+      fireEvent.change(emailInput, { target: { value: 'nguyễn@gmail.com' } });
+      expect(emailInput.value).toBe('nguyen@gmail.com');
+
+      fireEvent.change(passwordInput, { target: { value: 'P@ssw0rdđ' } });
+      expect(passwordInput.value).toBe('P@ssw0rdd');
+    });
     it('renders Google register button', () => {
       renderWithProviders(<RegisterPage />);
       expect(screen.getByRole('button', { name: /đăng ký với google/i })).toBeTruthy();

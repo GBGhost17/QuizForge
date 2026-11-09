@@ -39,10 +39,10 @@ export function DashboardPage() {
           <div className="space-y-1.5">
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium text-indigo-200">
-                {activeRole === 'creator' ? 'Bàn làm việc Giáo viên' : 'Góc học tập Học sinh'}
+                {activeRole === 'creator' ? 'Không gian Soạn đề' : 'Không gian Làm bài'}
               </span>
               <Badge variant="secondary" className="bg-white/20 text-white border-none text-[11px]">
-                {activeRole === 'creator' ? 'Creator' : 'Participant'}
+                {activeRole === 'creator' ? 'Soạn đề' : 'Làm bài'}
               </Badge>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">

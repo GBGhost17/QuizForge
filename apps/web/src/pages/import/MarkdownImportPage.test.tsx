@@ -105,6 +105,11 @@ describe('MarkdownImportPage', () => {
 
     renderComponent();
 
+    const textarea = screen.getByPlaceholderText(/dán hoặc nhập nội dung markdown/i);
+    fireEvent.change(textarea, {
+      target: { value: '## Q1: Câu hỏi mẫu\n> type: SINGLE_CHOICE\n- [x] A\n- [ ] B' },
+    });
+
     const parseBtn = screen.getAllByText('Phân tích & Xem trước')[0];
     expect(parseBtn).toBeDefined();
     if (parseBtn) {

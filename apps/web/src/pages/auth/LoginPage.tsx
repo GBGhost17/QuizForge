@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { LogIn } from 'lucide-react';
 import { LoginSchema } from '@quizforge/validation';
 import { useAuth } from '../../hooks/useAuth';
+import { sanitizeEnglishEmail, sanitizeEnglishPassword } from '../../lib/input-sanitizers';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import {
@@ -84,19 +85,34 @@ export function LoginPage() {
               id="email"
               type="email"
               label="Địa chỉ Email"
-              placeholder="ten@vidu.com"
+              placeholder="user@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setEmail(sanitizeEnglishEmail(e.target.value))}
               required
               autoComplete="email"
               autoFocus
+              lang="en"
+              autoCapitalize="none"
+              spellCheck={false}
             />
 
             <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-sm font-medium text-slate-700">
-                  Mật khẩu
-                </label>
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700">
+                Mật khẩu
+              </label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(sanitizeEnglishPassword(e.target.value))}
+                required
+                autoComplete="current-password"
+                lang="en"
+                autoCapitalize="none"
+                spellCheck={false}
+              />
+              <div className="flex justify-end pt-1">
                 <Link
                   to="/forgot-password"
                   className="text-xs font-medium text-indigo-600 hover:text-indigo-500 hover:underline"
@@ -104,15 +120,6 @@ export function LoginPage() {
                   Quên mật khẩu?
                 </Link>
               </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-              />
             </div>
 
             <Button

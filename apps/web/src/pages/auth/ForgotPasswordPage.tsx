@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { KeyRound, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { ForgotPasswordSchema } from '@quizforge/validation';
+import { sanitizeEnglishEmail } from '../../lib/input-sanitizers';
 import { apiClient } from '../../lib/api-client';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -85,10 +86,14 @@ export function ForgotPasswordPage() {
                   label="Địa chỉ Email đã đăng ký"
                   placeholder="ten@vidu.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(sanitizeEnglishEmail(e.target.value))}
                   required
                   autoComplete="email"
                   autoFocus
+                  lang="en"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  helperText="Chỉ nhập ký tự tiếng Anh (không dấu)"
                 />
 
                 <Button

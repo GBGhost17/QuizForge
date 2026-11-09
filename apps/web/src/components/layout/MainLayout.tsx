@@ -17,14 +17,14 @@ export function MainLayout() {
       {/* Top Sticky Header */}
       <Navbar />
 
-      {/* Body Container with Sidebar and Main Content */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* Body Container with Fixed Sticky Sidebar and Main Content */}
+      <div className="flex flex-1 items-start">
         <Sidebar />
 
         <main
           id="main-content"
           tabIndex={-1}
-          className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8 focus:outline-none"
+          className="flex-1 min-w-0 px-4 py-6 sm:px-6 lg:px-8 focus:outline-none"
         >
           <div className="mx-auto max-w-6xl">
             <ErrorBoundary>

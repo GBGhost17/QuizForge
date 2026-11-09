@@ -26,7 +26,7 @@ interface NavItem {
 
 export function Sidebar() {
   const { isAuthenticated } = useAuth();
-  const { activeRole, isSidebarOpen, setSidebarOpen } = useUIStore();
+  const { activeRole, isSidebarOpen, setSidebarOpen, setActiveRole } = useUIStore();
 
   const creatorNavItems: NavItem[] = [
     { label: 'Tổng quan', to: '/', icon: <LayoutDashboard className="h-4 w-4" /> },
@@ -59,25 +59,26 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile Backdrop */}
+      {/* Mobile Backdrop - positioned below Navbar (top-16) to never cover logo or navbar */}
       {isSidebarOpen && (
         <div
           role="presentation"
           onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs md:hidden"
+          className="fixed inset-0 top-16 z-30 bg-slate-900/40 backdrop-blur-xs md:hidden"
         />
       )}
 
-      {/* Sidebar Drawer */}
+      {/* Sidebar Drawer - pinned and sticky below Navbar, never scrolls away or slides */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-200 bg-white pt-16 transition-transform duration-200 ease-in-out md:static md:translate-x-0',
+          'fixed top-16 bottom-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white transition-transform duration-200 ease-in-out',
+          'md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:translate-x-0',
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div className="flex flex-col flex-1 px-4 py-4 overflow-y-auto">
-          {/* Active Workspace Tag */}
-          <div className="mb-4 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200">
+        <div className="flex flex-col h-full px-4 py-4 overflow-y-auto">
+          {/* Active Workspace Tag & Quick Role Switcher */}
+          <div className="mb-4 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 shrink-0">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 Không gian làm việc
@@ -91,8 +92,38 @@ export function Sidebar() {
                 ) : (
                   <GraduationCap className="h-3 w-3 mr-1" />
                 )}
-                {activeRole === 'creator' ? 'Giáo viên' : 'Học sinh'}
+                {activeRole === 'creator' ? 'Soạn đề' : 'Làm bài'}
               </Badge>
+            </div>
+
+            {/* Quick role selector */}
+            <div className="grid grid-cols-2 gap-1.5 pt-2 mt-2 border-t border-slate-200/80">
+              <button
+                type="button"
+                onClick={() => setActiveRole('creator')}
+                className={cn(
+                  'flex items-center justify-center space-x-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer',
+                  activeRole === 'creator'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100',
+                )}
+              >
+                <BookOpen className="h-3 w-3" />
+                <span>Soạn đề</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveRole('participant')}
+                className={cn(
+                  'flex items-center justify-center space-x-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer',
+                  activeRole === 'participant'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100',
+                )}
+              >
+                <GraduationCap className="h-3 w-3" />
+                <span>Làm bài</span>
+              </button>
             </div>
           </div>
 
@@ -120,13 +151,13 @@ export function Sidebar() {
 
           {/* Bottom Settings Link */}
           {isAuthenticated && (
-            <div className="pt-4 border-t border-slate-200">
+            <div className="pt-3 mt-auto shrink-0 border-t border-slate-200">
               <NavLink
                 to="/settings"
                 onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
+                    'flex items-center space-x-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors',
                     isActive
                       ? 'bg-indigo-50 text-indigo-700 font-semibold'
                       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',

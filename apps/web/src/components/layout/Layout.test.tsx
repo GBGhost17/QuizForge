@@ -49,8 +49,8 @@ describe('Layout and Navigation Integration', () => {
     cleanup();
   });
 
-  describe('Navbar & Role Switcher', () => {
-    it('renders logo and switches roles between Creator and Participant when authenticated', () => {
+  describe('Navbar', () => {
+    it('renders brand logo and user details when authenticated', () => {
       useAuthStore.getState().setAccessToken('mock-token');
 
       const client = new QueryClient({
@@ -72,39 +72,6 @@ describe('Layout and Navigation Integration', () => {
       );
 
       expect(screen.getByText('Forge')).toBeTruthy();
-
-      // Find switch role buttons
-      const participantBtn = screen.getByRole('button', { name: /học sinh \/ làm bài/i });
-      fireEvent.click(participantBtn);
-
-      expect(useUIStore.getState().activeRole).toBe('participant');
-
-      const creatorBtn = screen.getByRole('button', { name: /giáo viên \/ soạn đề/i });
-      fireEvent.click(creatorBtn);
-
-      expect(useUIStore.getState().activeRole).toBe('creator');
-    });
-
-    it('renders user details and logout button when logged in', () => {
-      useAuthStore.getState().setAccessToken('mock-token');
-
-      // Mock user in react-query cache
-      const client = new QueryClient();
-      client.setQueryData(['auth', 'me'], {
-        id: 'u-1',
-        name: 'Giáo viên Minh',
-        email: 'minh@quizforge.local',
-        role: 'USER',
-      });
-
-      render(
-        <QueryClientProvider client={client}>
-          <MemoryRouter>
-            <Navbar />
-          </MemoryRouter>
-        </QueryClientProvider>,
-      );
-
       expect(screen.getByText('Giáo viên Minh')).toBeTruthy();
       expect(screen.getByRole('button', { name: /đăng xuất/i })).toBeTruthy();
     });
@@ -128,6 +95,26 @@ describe('Layout and Navigation Integration', () => {
       expect(screen.getByText('Lịch sử bài làm')).toBeTruthy();
       expect(screen.getByText('Tự luyện tập')).toBeTruthy();
     });
+
+    it('allows users to switch roles between Soạn đề and Làm bài inside the sidebar', () => {
+      useUIStore.setState({ activeRole: 'creator' });
+      renderWithProviders(<Sidebar />);
+
+      const participantBtn = screen.getByRole('button', { name: /^làm bài$/i });
+      fireEvent.click(participantBtn);
+      expect(useUIStore.getState().activeRole).toBe('participant');
+
+      const creatorBtn = screen.getByRole('button', { name: /^soạn đề$/i });
+      fireEvent.click(creatorBtn);
+      expect(useUIStore.getState().activeRole).toBe('creator');
+    });
+
+    it('positions sidebar drawer below navbar without overlapping logo or navbar', () => {
+      const { container } = renderWithProviders(<Sidebar />);
+      const aside = container.querySelector('aside');
+      expect(aside?.className).toContain('top-16');
+      expect(aside?.className).toContain('z-40');
+    });
   });
 
   describe('DashboardPage', () => {
@@ -135,7 +122,7 @@ describe('Layout and Navigation Integration', () => {
       useUIStore.setState({ activeRole: 'creator' });
       renderWithProviders(<DashboardPage />);
 
-      expect(screen.getByText('Bàn làm việc Giáo viên')).toBeTruthy();
+      expect(screen.getByText('Không gian Soạn đề')).toBeTruthy();
       expect(screen.getByText('Tạo đề thi mới')).toBeTruthy();
       expect(screen.getByText('Chưa có bài thi nào được khởi tạo')).toBeTruthy();
     });
@@ -144,7 +131,7 @@ describe('Layout and Navigation Integration', () => {
       useUIStore.setState({ activeRole: 'participant' });
       renderWithProviders(<DashboardPage />);
 
-      expect(screen.getByText('Góc học tập Học sinh')).toBeTruthy();
+      expect(screen.getByText('Không gian Làm bài')).toBeTruthy();
       expect(screen.getByText('Tham gia bài thi ngay')).toBeTruthy();
       expect(screen.getByPlaceholderText('Ví dụ: QUIZ101')).toBeTruthy();
     });
