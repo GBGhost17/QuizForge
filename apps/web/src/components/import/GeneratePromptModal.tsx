@@ -10,7 +10,6 @@ import {
   HelpCircle,
   FileText,
   AlertCircle,
-  Calculator,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -21,8 +20,6 @@ export interface PromptConfig {
   questionCount: number;
   questionType: string;
   difficulty: string;
-  totalScalePoints?: number;
-  pointsPerQuestion: number;
   scope: string;
   includeExplanation: boolean;
   includeKaTeX: boolean;
@@ -34,8 +31,6 @@ export function buildQuizForgeAIPrompt(config: PromptConfig): string {
     questionCount,
     questionType,
     difficulty,
-    totalScalePoints,
-    pointsPerQuestion,
     scope,
     includeExplanation,
     includeKaTeX,
@@ -91,7 +86,6 @@ export function buildQuizForgeAIPrompt(config: PromptConfig): string {
 - **Số lượng câu hỏi**: ${questionCount} câu ${questionCount > 20 ? `(Lưu ý: Hãy đảm bảo sinh đủ từ Q1 đến Q${questionCount}, không ngắt quãng giữa chừng)` : ''}
 - **Dạng câu hỏi**: ${typeDesc}
 - **Độ khó**: ${difficultyDesc}
-- **Thang điểm**: ${totalScalePoints ? `Thang ${totalScalePoints} điểm (${pointsPerQuestion} điểm/câu)` : `${pointsPerQuestion} điểm/câu`}
 ${scope ? `- **Phạm vi kiến thức & Yêu cầu trọng tâm**: ${scope}` : ''}
 ${includeExplanation ? '- **Lời giải**: Bắt buộc có phần giải thích chi tiết cho từng câu hỏi.' : ''}
 ${includeKaTeX ? '- **Công thức Toán / Khoa học**: Mọi công thức Toán/Lý/Hóa hoặc ký hiệu khoa học PHẢI viết bằng cú pháp KaTeX/LaTeX ($...$ cho inline và $$...$$ cho khối công thức riêng).' : ''}
@@ -113,7 +107,6 @@ tags: [on-tap, kiem-tra]
 ## Q1: [Nội dung câu hỏi ngắn gọn hoặc tiêu đề]
 > type: SINGLE_CHOICE
 > difficulty: EASY
-> points: ${pointsPerQuestion}
 > topic: ${subject || 'Chủ đề 1'}
 > explanation: Lời giải thích vì sao đáp án này đúng
 
@@ -128,7 +121,6 @@ $$\\int_{0}^{1} x dx$$
 ## Q2: [Câu hỏi nhiều lựa chọn nếu có]
 > type: MULTIPLE_CHOICE
 > difficulty: MEDIUM
-> points: ${pointsPerQuestion}
 > explanation: Giải thích các phương án đúng
 
 Chọn các mệnh đề chính xác:
@@ -139,7 +131,6 @@ Chọn các mệnh đề chính xác:
 ## Q3: [Câu hỏi Đúng / Sai]
 > type: TRUE_FALSE
 > difficulty: EASY
-> points: ${pointsPerQuestion}
 > explanation: Giải thích tính đúng sai của nhận định
 
 Nhận định: Số nguyên tố chẵn duy nhất là số 2.
@@ -149,7 +140,6 @@ Nhận định: Số nguyên tố chẵn duy nhất là số 2.
 ## Q4: [Câu hỏi điền đáp án ngắn]
 > type: SHORT_ANSWER
 > difficulty: MEDIUM
-> points: ${pointsPerQuestion}
 > acceptedAnswers: [4, 4.0, bốn]
 > explanation: Căn bậc hai số học của 16 là 4.
 
@@ -158,8 +148,7 @@ Tính căn bậc hai số học của 16.
 ## Q5: [Câu hỏi tự luận]
 > type: ESSAY
 > difficulty: HARD
-> points: ${pointsPerQuestion * 2}
-> rubric: Tiêu chí 1: nêu đúng định nghĩa (1.0đ); Tiêu chí 2: cho ví dụ minh họa (1.0đ)
+> rubric: Tiêu chí 1: nêu đúng định nghĩa; Tiêu chí 2: cho ví dụ minh họa
 > modelAnswer: Trình bày chi tiết bài giải mẫu hoàn chỉnh tại đây...
 
 Trình bày nội dung và phương pháp giải quyết vấn đề...
@@ -188,42 +177,11 @@ export function GeneratePromptModal({
 }: GeneratePromptModalProps) {
   const [subject, setSubject] = useState(bankTitle || 'Toán học THPT');
   const [questionCount, setQuestionCount] = useState(10);
-  const [totalScalePoints, setTotalScalePoints] = useState(10);
-  const [isAutoCalculate, setIsAutoCalculate] = useState(true);
   const [questionType, setQuestionType] = useState('ALL');
   const [difficulty, setDifficulty] = useState('BALANCED');
-  const [pointsPerQuestion, setPointsPerQuestion] = useState(1.0);
   const [scope, setScope] = useState('');
   const [includeExplanation, setIncludeExplanation] = useState(true);
   const [includeKaTeX, setIncludeKaTeX] = useState(true);
-
-  // Helper calculating points per question (scale / count)
-  const calculatePoints = (scale: number, count: number): number => {
-    if (count <= 0 || scale <= 0) return 1.0;
-    const raw = scale / count;
-    const rounded = Math.round(raw * 100) / 100;
-    return rounded > 0 ? rounded : 0.05;
-  };
-
-  const handleQuestionCountChange = (count: number) => {
-    setQuestionCount(count);
-    if (isAutoCalculate && count > 0 && totalScalePoints > 0) {
-      setPointsPerQuestion(calculatePoints(totalScalePoints, count));
-    }
-  };
-
-  const handleScalePointsChange = (scale: number) => {
-    setTotalScalePoints(scale);
-    if (isAutoCalculate && questionCount > 0 && scale > 0) {
-      setPointsPerQuestion(calculatePoints(scale, questionCount));
-    }
-  };
-
-  const handleRecalculate = () => {
-    const pts = calculatePoints(totalScalePoints, questionCount);
-    setPointsPerQuestion(pts);
-    setIsAutoCalculate(true);
-  };
 
   const [activeTab, setActiveTab] = useState<'CONFIG' | 'PROMPT'>('CONFIG');
   const [copied, setCopied] = useState(false);
@@ -238,8 +196,6 @@ export function GeneratePromptModal({
       questionCount,
       questionType,
       difficulty,
-      totalScalePoints,
-      pointsPerQuestion,
       scope,
       includeExplanation,
       includeKaTeX,
@@ -272,7 +228,6 @@ tags: [on-tap, de-mau]
 ## Q1: Phương trình bậc hai
 > type: SINGLE_CHOICE
 > difficulty: EASY
-> points: ${pointsPerQuestion}
 > topic: ${subject || 'Đại số'}
 > explanation: Phương trình $x^2 - 4 = 0 \\Leftrightarrow x = \\pm 2$.
 
@@ -285,21 +240,11 @@ Nghiệm của phương trình $x^2 - 4 = 0$ là:
 ## Q2: Mệnh đề toán học
 > type: TRUE_FALSE
 > difficulty: EASY
-> points: ${pointsPerQuestion}
 > explanation: Số 2 là số nguyên tố chẵn duy nhất.
 
 Số 2 là số nguyên tố chẵn duy nhất.
 - [x] Đúng
 - [ ] Sai
-
-## Q3: Điền giá trị
-> type: SHORT_ANSWER
-> difficulty: MEDIUM
-> points: ${pointsPerQuestion}
-> acceptedAnswers: [10, mười]
-> explanation: $5 \\times 2 = 10$.
-
-Tính giá trị của biểu thức $5 \\times 2$:
 `;
       onApplyDemoTemplate(demo);
       onClose();
@@ -395,7 +340,7 @@ Tính giá trị của biểu thức $5 \\times 2$:
                     max={100}
                     label="Số lượng câu hỏi"
                     value={questionCount}
-                    onChange={(e) => handleQuestionCountChange(parseInt(e.target.value, 10) || 1)}
+                    onChange={(e) => setQuestionCount(parseInt(e.target.value, 10) || 1)}
                     required
                   />
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -472,114 +417,6 @@ Tính giá trị của biểu thức $5 \\times 2$:
                     <option value="MEDIUM">Trung bình (Vận dụng)</option>
                     <option value="HARD">Khó (Vận dụng cao / Phân loại)</option>
                   </select>
-                </div>
-              </div>
-
-              {/* Automatic Points Calculation Box */}
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
-                    <Calculator className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                    <span>Thang điểm & Tự động tính điểm mỗi câu</span>
-                  </div>
-                  <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-600 dark:text-slate-400 select-none">
-                    <input
-                      type="checkbox"
-                      checked={isAutoCalculate}
-                      onChange={(e) => {
-                        setIsAutoCalculate(e.target.checked);
-                        if (e.target.checked) {
-                          handleRecalculate();
-                        }
-                      }}
-                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5"
-                    />
-                    <span>Tự động chia điểm</span>
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Input
-                      id="prompt-scale"
-                      type="number"
-                      step="0.5"
-                      min={1}
-                      label="Tổng thang điểm đề thi"
-                      value={totalScalePoints}
-                      onChange={(e) => handleScalePointsChange(parseFloat(e.target.value) || 10)}
-                      required
-                    />
-                    <div className="flex flex-wrap gap-1 pt-1">
-                      {[10, 20, 40, 100].map((scale) => (
-                        <button
-                          key={scale}
-                          type="button"
-                          onClick={() => handleScalePointsChange(scale)}
-                          className={`px-1.5 py-0.5 text-[10px] rounded-md font-medium transition-colors cursor-pointer ${
-                            totalScalePoints === scale
-                              ? 'bg-indigo-600 text-white'
-                              : 'bg-white hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                          }`}
-                        >
-                          Thang {scale}đ
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <Input
-                      id="prompt-points"
-                      type="number"
-                      step="0.05"
-                      min={0.05}
-                      label="Điểm mỗi câu hỏi"
-                      value={pointsPerQuestion}
-                      onChange={(e) => {
-                        setPointsPerQuestion(parseFloat(e.target.value) || 0.05);
-                        setIsAutoCalculate(false);
-                      }}
-                      required
-                    />
-                    <div className="flex flex-wrap gap-1 pt-1">
-                      {[0.1, 0.2, 0.25, 0.5, 1.0].map((pt) => (
-                        <button
-                          key={pt}
-                          type="button"
-                          onClick={() => {
-                            setPointsPerQuestion(pt);
-                            setIsAutoCalculate(false);
-                          }}
-                          className={`px-1.5 py-0.5 text-[10px] rounded-md font-medium transition-colors cursor-pointer ${
-                            pointsPerQuestion === pt
-                              ? 'bg-indigo-600 text-white'
-                              : 'bg-white hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                          }`}
-                        >
-                          {pt}đ
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900/60 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
-                  <span>
-                    Công thức:{' '}
-                    <strong className="text-indigo-600 dark:text-indigo-400">
-                      {totalScalePoints}đ ÷ {questionCount} câu = {pointsPerQuestion} điểm/câu
-                    </strong>
-                  </span>
-                  {!isAutoCalculate && (
-                    <button
-                      type="button"
-                      onClick={handleRecalculate}
-                      className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold cursor-pointer"
-                    >
-                      Chia đều lại
-                    </button>
-                  )}
                 </div>
               </div>
 

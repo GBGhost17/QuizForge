@@ -282,31 +282,16 @@ describe('MarkdownImportPage', () => {
     expect(screen.getByText(/giới hạn độ dài phản hồi/i)).toBeTruthy();
   });
 
-  it('automatically calculates points per question from total scale and question count', () => {
+  it('generates prompt without points configuration since points belong to test builder', () => {
     renderComponent();
 
     // Click "Tạo Prompt AI" button
     const promptBtn = screen.getByRole('button', { name: /tạo prompt ai/i });
     fireEvent.click(promptBtn);
 
-    const countInput = screen.getByLabelText(/số lượng câu hỏi/i) as HTMLInputElement;
-    const pointsInput = screen.getByLabelText(/điểm mỗi câu hỏi/i) as HTMLInputElement;
-    const scaleInput = screen.getByLabelText(/tổng thang điểm đề thi/i) as HTMLInputElement;
-
-    // Initial: 10 scale / 10 questions = 1.0 point
-    expect(pointsInput.value).toBe('1');
-
-    // Change question count to 20: 10 / 20 = 0.5 point
-    fireEvent.change(countInput, { target: { value: '20' } });
-    expect(pointsInput.value).toBe('0.5');
-
-    // Change question count to 40: 10 / 40 = 0.25 point
-    fireEvent.change(countInput, { target: { value: '40' } });
-    expect(pointsInput.value).toBe('0.25');
-
-    // Change total scale to 100: 100 / 40 = 2.5 points
-    fireEvent.change(scaleInput, { target: { value: '100' } });
-    expect(pointsInput.value).toBe('2.5');
+    // Không còn input thang điểm hay điểm mỗi câu trong ngân hàng
+    expect(screen.queryByLabelText(/điểm mỗi câu hỏi/i)).toBeNull();
+    expect(screen.queryByLabelText(/tổng thang điểm đề thi/i)).toBeNull();
   });
 
   it('opens SelectTargetBankModal when clicking commit from /import route without bankId', async () => {
