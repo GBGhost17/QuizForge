@@ -11,6 +11,7 @@ import { GoogleCallbackPage } from '../pages/auth/GoogleCallbackPage';
 import { PlaceholderPage } from '../pages/PlaceholderPage';
 import { QuestionBanksPage } from '../pages/question-banks/QuestionBanksPage';
 import { QuestionBankDetailPage } from '../pages/question-banks/QuestionBankDetailPage';
+import { MarkdownImportPage } from '../pages/import/MarkdownImportPage';
 
 export const router = createBrowserRouter([
   {
@@ -75,6 +76,14 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: 'question-banks/:id/import',
+        element: (
+          <ProtectedRoute>
+            <MarkdownImportPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'tests',
         element: (
           <ProtectedRoute>
@@ -94,7 +103,7 @@ export const router = createBrowserRouter([
         path: 'import',
         element: (
           <ProtectedRoute>
-            <PlaceholderPage title="Nhập đề thi từ Markdown" />
+            <MarkdownImportPage />
           </ProtectedRoute>
         ),
       },

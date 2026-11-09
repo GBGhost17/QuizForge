@@ -344,8 +344,8 @@ export function QuestionEditorModal({
                 label="Điểm mặc định"
                 value={defaultPoints}
                 onChange={(e) => setDefaultPoints(parseFloat(e.target.value) || 0)}
-                step="0.5"
-                min="0.1"
+                step="0.05"
+                min="0.05"
                 required
               />
             </div>
@@ -540,8 +540,8 @@ export function QuestionEditorModal({
                       />
                       <input
                         type="number"
-                        step="0.25"
-                        min="0.1"
+                        step="0.05"
+                        min="0.05"
                         value={crit.points}
                         onChange={(e) => handleCriterionChange(idx, 'points', e.target.value)}
                         placeholder="Điểm"

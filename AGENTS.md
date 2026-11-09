@@ -5,14 +5,17 @@ Read `README.md`, `docs/PRODUCT_SPEC.md`, and `docs/ROADMAP.md` before modifying
 ## Operating Protocol
 1. Inspect repository and existing conventions before proposing edits.
 2. State stage ID (S00–S15), scope, assumptions, affected files, tests, and rollback plan.
-3. Make small, reviewable changes only within the active stage; avoid speculative refactors.
+3. Make small, reviewable changes only within the active stage. Stage branches must strictly focus on their designated stage scope. Move any optimizations or bug fixes to a separate branch named `dev-optimization` (create it if it does not exist).
 4. Ask for approval before irreversible changes, destructive migrations, secret/service configuration, or major architectural deviations.
 5. Implement validation, authorization, and tests alongside features.
 6. Run available lint, typecheck, tests, and build; report exact commands/results. If unable, state why.
 7. Update docs and ADRs when behavior or architecture changes.
 8. Prefer a feature branch and pull request; never force-push or merge to default branch without explicit approval.
+9. Execute `git` operations (commit, push, branch creation/checkout, merge) **only when explicitly instructed by the user**.
 
 ## Hard Constraints
+- Do not execute any `git` commands unless directly commanded by the user.
+- Do not perform optimization or bug-fix tasks on stage-specific branches (switch to `dev-optimization`).
 - Do not commit credentials, API tokens, `.env`, or personal student data.
 - Do not expose correct answers, model answers, or grading rubrics to unauthorized clients.
 - Do not bypass authorization in UI or API.

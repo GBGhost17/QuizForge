@@ -207,6 +207,13 @@ describe('Question Banks Feature Integration', () => {
       expect(screen.getByText('Mặt Trời quay quanh Trái Đất.')).toBeTruthy();
       expect(screen.getByText('Hà Nội')).toBeTruthy();
       expect(screen.getByText('TP. Hồ Chí Minh')).toBeTruthy();
+
+      // Mặc định ẩn nhãn độ khó
+      expect(screen.queryAllByTestId('difficulty-badge')).toHaveLength(0);
+
+      // Khi bật tùy chọn hiển thị
+      fireEvent.click(screen.getByLabelText(/hiện nhãn độ khó/i));
+      expect(screen.getAllByTestId('difficulty-badge')).toHaveLength(2);
     });
 
     it('opens question editor modal when clicking "Thêm câu hỏi"', async () => {
