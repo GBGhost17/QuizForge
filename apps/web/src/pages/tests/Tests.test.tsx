@@ -259,5 +259,35 @@ describe('Tests & Test Builder Feature Integration (Stage S07)', () => {
       expect(await screen.findByText(/Giá trị của biểu thức 2 \+ 3 là bao nhiêu\?/i)).toBeTruthy();
       expect(screen.getByRole('button', { name: /Xuất bản đề thi/i })).toBeTruthy();
     });
+
+    it('shows warning and blocks publishing when total points do not match target scale', async () => {
+      renderWithProviders(
+        <Routes>
+          <Route path="/tests/:id/edit" element={<TestEditorPage />} />
+        </Routes>,
+        ['/tests/test-1/edit'],
+      );
+
+      expect(await screen.findByDisplayValue('Đề thi thử Toán 12')).toBeTruthy();
+
+      // Thang điểm chuẩn mặc định là 10, nhưng test-1 chỉ có 1 câu 2.0 điểm
+      const publishBtn = screen.getByRole('button', { name: /Xuất bản đề thi/i });
+      fireEvent.click(publishBtn);
+
+      expect(await screen.findByText('Cảnh báo chênh lệch điểm số')).toBeTruthy();
+      expect(screen.getByText(/Không thể xuất bản đề thi/i)).toBeTruthy();
+      expect(screen.getAllByText(/Chênh lệch:/i).length).toBeGreaterThanOrEqual(1);
+
+      // Click nút tự động chia đều theo thang điểm
+      const autoDistributeBtn = screen.getByRole('button', {
+        name: /Tự động chia đều theo thang 10đ/i,
+      });
+      fireEvent.click(autoDistributeBtn);
+
+      // Modal cảnh báo đóng lại và điểm được chia thành 10đ
+      expect(
+        await screen.findByText(/Đã tự động cân bằng tròn đúng 10 điểm cho 1 câu/i),
+      ).toBeTruthy();
+    });
   });
 });
