@@ -148,16 +148,22 @@ export function TestDetailPage() {
                 size="sm"
                 onClick={() => navigate(`/tests/${test.id}/edit`)}
                 className="flex items-center gap-1.5"
+                title="Soạn đề"
+                aria-label="Soạn đề"
               >
-                <Edit3 className="h-4 w-4" /> Soạn đề
+                <Edit3 className="h-4 w-4" />
+                <span className="hidden sm:inline">Soạn đề</span>
               </Button>
               <Button
                 size="sm"
                 onClick={() => setIsPublishModalOpen(true)}
                 disabled={snapshots.length === 0}
                 className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                title="Xuất bản đề thi"
+                aria-label="Xuất bản đề thi"
               >
-                <Send className="h-4 w-4" /> Xuất bản
+                <Send className="h-4 w-4" />
+                <span className="hidden sm:inline">Xuất bản</span>
               </Button>
             </>
           )}
@@ -169,8 +175,11 @@ export function TestDetailPage() {
                 size="sm"
                 onClick={() => setIsQRModalOpen(true)}
                 className="flex items-center gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/30"
+                title="Tạo mã QR"
+                aria-label="Tạo mã QR"
               >
-                <QrCode className="h-4 w-4" /> Tạo mã QR
+                <QrCode className="h-4 w-4" />
+                <span className="hidden sm:inline">Tạo mã QR</span>
               </Button>
 
               <Button
@@ -178,8 +187,11 @@ export function TestDetailPage() {
                 size="sm"
                 onClick={() => setIsCloseModalOpen(true)}
                 className="flex items-center gap-1.5"
+                title="Đóng bài kiểm tra"
+                aria-label="Đóng bài kiểm tra"
               >
-                <Ban className="h-4 w-4" /> Đóng bài kiểm tra
+                <Ban className="h-4 w-4" />
+                <span className="hidden sm:inline">Đóng bài kiểm tra</span>
               </Button>
             </>
           )}
@@ -225,22 +237,29 @@ export function TestDetailPage() {
                   type="button"
                   onClick={() => setIsQRModalOpen(true)}
                   className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  title="Tạo mã QR"
+                  aria-label="Tạo mã QR"
                 >
-                  <QrCode className="h-4 w-4" /> Tạo mã QR
+                  <QrCode className="h-4 w-4" />
+                  <span className="hidden sm:inline">Tạo mã QR</span>
                 </Button>
 
                 <Button
                   type="button"
                   onClick={handleCopyCode}
                   className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  title="Sao chép mã phòng thi"
+                  aria-label="Sao chép mã phòng thi"
                 >
                   {copiedType === 'code' ? (
                     <>
-                      <Check className="h-4 w-4" /> Đã chép mã
+                      <Check className="h-4 w-4" />
+                      <span className="hidden sm:inline">Đã chép mã</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="h-4 w-4" /> Sao chép mã
+                      <Copy className="h-4 w-4" />
+                      <span className="hidden sm:inline">Sao chép mã</span>
                     </>
                   )}
                 </Button>
@@ -250,14 +269,18 @@ export function TestDetailPage() {
                   variant="outline"
                   onClick={handleCopyLink}
                   className="flex items-center gap-1.5 border-emerald-300 bg-white hover:bg-emerald-50 dark:border-emerald-800 dark:bg-slate-900"
+                  title="Sao chép link vào thi"
+                  aria-label="Sao chép link vào thi"
                 >
                   {copiedType === 'link' ? (
                     <>
-                      <Check className="h-4 w-4 text-emerald-600" /> Đã chép link
+                      <Check className="h-4 w-4 text-emerald-600" />
+                      <span className="hidden sm:inline">Đã chép link</span>
                     </>
                   ) : (
                     <>
-                      <Share2 className="h-4 w-4" /> Sao chép link vào thi
+                      <Share2 className="h-4 w-4" />
+                      <span className="hidden sm:inline">Sao chép link vào thi</span>
                     </>
                   )}
                 </Button>

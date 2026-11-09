@@ -195,8 +195,12 @@ export function QuestionBanksPage() {
                     size="sm"
                     onClick={() => navigate(`/question-banks/${bank.id}`)}
                     className="flex-1 mr-2 font-medium"
+                    title="Xem danh sách câu hỏi"
+                    aria-label={`Xem câu hỏi ${bank.title}`}
                   >
-                    Xem câu hỏi
+                    <BookOpen className="h-4 w-4 sm:mr-1.5" />
+                    <span className="hidden sm:inline">Xem câu hỏi</span>
+                    <span className="sm:hidden">Chi tiết</span>
                   </Button>
 
                   <div className="flex items-center gap-1">

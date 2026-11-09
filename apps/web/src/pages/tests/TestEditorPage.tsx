@@ -236,8 +236,11 @@ export function TestEditorPage() {
             size="sm"
             onClick={() => navigate(`/tests/${test.id}`)}
             className="flex items-center gap-1.5"
+            title="Xem trước đề thi"
+            aria-label="Xem trước đề thi"
           >
-            <Eye className="h-4 w-4" /> Xem trước
+            <Eye className="h-4 w-4" />
+            <span className="hidden sm:inline">Xem trước</span>
           </Button>
 
           {!isPublished && (
@@ -246,8 +249,11 @@ export function TestEditorPage() {
               onClick={() => setIsPublishModalOpen(true)}
               disabled={snapshots.length === 0}
               className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+              title="Xuất bản đề thi"
+              aria-label="Xuất bản đề thi"
             >
-              <Send className="h-4 w-4" /> Xuất bản đề thi
+              <Send className="h-4 w-4" />
+              <span className="hidden sm:inline">Xuất bản đề thi</span>
             </Button>
           )}
         </div>
@@ -421,16 +427,23 @@ export function TestEditorPage() {
                     onClick={handleSavePoints}
                     disabled={reorderMutation.isPending}
                     className="text-xs"
+                    title="Lưu điểm số"
+                    aria-label="Lưu điểm số"
                   >
-                    Lưu điểm số
+                    <Save className="h-3.5 w-3.5 sm:mr-1" />
+                    <span className="hidden sm:inline">Lưu điểm số</span>
                   </Button>
                 )}
                 <Button
                   size="sm"
                   onClick={() => setIsPickerOpen(true)}
                   className="flex items-center gap-1.5"
+                  title="Thêm câu hỏi từ ngân hàng"
+                  aria-label="Thêm câu hỏi từ ngân hàng"
                 >
-                  <Plus className="h-4 w-4" /> Thêm câu hỏi từ ngân hàng
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Thêm câu hỏi từ ngân hàng</span>
+                  <span className="sm:hidden">Thêm câu hỏi</span>
                 </Button>
               </div>
             )}
