@@ -85,3 +85,135 @@ This file tracks incremental feature implementations, stage progressions (S00–
   - Unit tests: 155/155 PASSED (33 in validation, 71 in api, 51 in web).
   - `pnpm build` — PASSED (Vite + NestJS API).
 - **Next Step**: Commit and push changes to `feat/S05-question-bank-crud`, verify green CI on GitHub, merge into `main`, and advance to Stage S06 (Markdown import pipeline).
+
+### [2026-11-08] Stage S06 - Markdown Import Pipeline with KaTeX Math and Line Diagnostics
+
+- **Branch**: `feat/S06-markdown-import`
+- **Changes**:
+  - `packages/shared-types`: Added contracts for `MarkdownDiagnosticSeverity`, `ImportDiagnostic`, `ParsedQuestion`, `MarkdownImportResult`, `MarkdownImportParseDto`, `MarkdownImportCommitDto`.
+  - `packages/validation`: Created Zod schemas `MarkdownImportParseSchema`, `MarkdownFrontmatterSchema`, `ParsedQuestionSchema`, `MarkdownImportCommitSchema` with 8 unit tests.
+  - `apps/api`: Built `ImportsModule` featuring `MarkdownParserService` with unified/remark AST-based parser, multi-question chunking (`##`), frontmatter extraction, metadata parsing, support for 5 question types (SINGLE_CHOICE, MULTIPLE_CHOICE, TRUE_FALSE, SHORT_ANSWER, ESSAY), line-level diagnostics, and security scanning (`<script>`, event handlers, `javascript:`).
+  - `apps/api`: Implemented `ImportsController` exposing `POST /api/v1/imports/markdown/parse` (preview) and `POST /api/v1/imports/markdown/commit` (transactional Prisma persistence with bank ownership verification). Added 12 unit tests and 4 markdown test fixtures.
+  - `apps/web`: Created `MarkdownMathPreview` component integrating KaTeX math formatting (`$...$` and `$$...$$`) with sanitized markdown, `useMarkdownImport` TanStack Query mutation hooks, and dual-pane `MarkdownImportPage` featuring sample template, real-time preview, line error badges, and transactional commit CTA.
+  - `apps/web`: Registered `/question-banks/:id/import` route and updated `QuestionBankDetailPage` with direct navigation and math equation rendering.
+- **Validation**:
+  - `pnpm format:check` — PASSED (Prettier).
+  - `pnpm lint` — PASSED (0 errors, 0 warnings across all workspaces).
+  - `pnpm typecheck` — PASSED (all packages/apps).
+  - Unit tests: 184/184 tests PASSED (41 in validation, 83 in api, 60 in web).
+  - `pnpm build` — PASSED (Vite + NestJS API).
+- **Next Step**: Review and merge `feat/S06-markdown-import` into `main`, then proceed to Stage S07: Test Builder and Publishing.
+
+### [2026-11-08] Stage S06 - AI Prompt Generator, Bank Selector Modal & AI Verification Banner
+
+- **Branch**: `feat/S06-markdown-import`
+- **Changes**:
+  - `apps/web/src/components/import/GeneratePromptModal.tsx`: Created modal for customizable AI prompt generation (subject, question count, question types, difficulty, score scale, auto points-per-question calculation with 0.05 step increments, advisory warnings for high question counts, and 1-click copy).
+  - `apps/web/src/components/import/SelectTargetBankModal.tsx`: Created modal when importing questions from sidebar `/import` without pre-selected bank ID, enabling selection of existing banks or creating new bank on the fly.
+  - `apps/web/src/pages/import/MarkdownImportPage.tsx`: Integrated `GeneratePromptModal` and `SelectTargetBankModal`, added difficulty label toggle checkbox, and added an optimized AI content verification advisory banner reminding educators to review AI-generated questions and formula formatting before importing.
+  - `apps/web/src/pages/import/MarkdownImportPage.test.tsx`: Added 5 unit/integration tests covering AI prompt generator, bank selection modal, score step calculations, and AI verification banner.
+- **Validation**:
+  - `pnpm format:check` — PASSED (Prettier).
+  - `pnpm lint` — PASSED (0 errors, 0 warnings).
+  - `pnpm typecheck` — PASSED (all 4 workspace projects).
+  - `pnpm --filter @quizforge/web test --run` — PASSED (65/65 tests across 11 suites).
+- **Next Step**: Await user command or proceed to Stage S07: Test Builder and Publishing.
+
+### [2026-11-08] Stage S06 - Markdown Error Diagnostic Copy Features
+
+- **Branch**: `feat/S06-markdown-import`
+- **Changes**:
+  - `apps/web/src/pages/import/MarkdownImportPage.tsx`: Added comprehensive error copying capabilities in the Diagnostics Report card:
+    - "Sao chép tất cả lỗi" button in the card header, compiling an AI-ready summary of all syntax errors and warnings with line numbers and remediation tips.
+    - Individual copy button on each diagnostic card with accessible `aria-label`, tooltip, and animated state (`Đã chép` checkmark feedback).
+  - `apps/web/src/pages/import/MarkdownImportPage.test.tsx`: Added unit test covering single diagnostic and batch diagnostics clipboard copy interactions.
+- **Validation**:
+  - `pnpm format:check` — PASSED (Prettier).
+  - `pnpm lint` — PASSED (0 errors, 0 warnings).
+  - `pnpm typecheck` — PASSED (all 4 workspace projects).
+  - `pnpm --filter @quizforge/web test --run` — PASSED (66/66 web tests passed).
+  - `pnpm --filter @quizforge/api test -- src/` — PASSED (83/83 unit tests passed).
+- **Next Step**: Await user instructions.
+
+### [2026-11-08] Stage S06 - KaTeX Math & Markdown Rich Text Rendering in Explanations & Prompts
+
+- **Branch**: `feat/S06-markdown-import`
+- **Changes**:
+  - `apps/web/src/components/common/MarkdownMathPreview.tsx`: Added `whitespace-pre-line` newline preserving behavior and custom `strong`/`em` element renderers for natural multi-line step-by-step mathematical solutions.
+  - `apps/web/src/pages/import/MarkdownImportPage.tsx`: Wrapped question explanations, option explanations, and essay model answers with `<MarkdownMathPreview />` instead of raw text interpolation.
+  - `apps/web/src/pages/question-banks/QuestionBankDetailPage.tsx`: Upgraded explanation cards and essay model answers to render formatted KaTeX equations and markdown rich text.
+  - `apps/api/src/modules/imports/markdown-parser.service.ts`: Improved `extractTextFromNode` to preserve markdown formatting tokens (`**bold**`, `*italic*`, `~~strike~~`, newlines `\n` from breaks), and enabled multi-line continuation for metadata fields in blockquotes (such as detailed multi-line mathematical explanations).
+  - Test suites: Added test cases in `MarkdownMathPreview.test.tsx` and `markdown-parser.service.spec.ts` verifying rendering of complex multi-line algebra derivations and LaTeX set notations.
+- **Validation**:
+  - `pnpm format:check` — PASSED (Prettier).
+  - `pnpm lint` — PASSED (0 errors, 0 warnings).
+  - `pnpm typecheck` — PASSED (all workspace projects).
+  - `pnpm --filter @quizforge/web test --run` — PASSED (67/67 web tests).
+  - `pnpm --filter @quizforge/api test -- src/` — PASSED (84/84 api unit tests).
+- **Next Step**: Await user instructions or proceed to Stage S07.
+
+### [2026-11-08] Stage S06 - Markdown Import Pipeline with KaTeX Math and Line Diagnostics
+
+- **Branch**: `feat/S06-markdown-import`
+- **Changes**:
+  - `packages/shared-types`: Added contracts for `MarkdownDiagnosticSeverity`, `ImportDiagnostic`, `ParsedQuestion`, `MarkdownImportResult`, `MarkdownImportParseDto`, `MarkdownImportCommitDto`.
+  - `packages/validation`: Created Zod schemas `MarkdownImportParseSchema`, `MarkdownFrontmatterSchema`, `ParsedQuestionSchema`, `MarkdownImportCommitSchema` with 8 unit tests.
+  - `apps/api`: Built `ImportsModule` featuring `MarkdownParserService` with unified/remark AST-based parser, multi-question chunking (`##`), frontmatter extraction, metadata parsing, support for 5 question types (SINGLE_CHOICE, MULTIPLE_CHOICE, TRUE_FALSE, SHORT_ANSWER, ESSAY), line-level diagnostics, and security scanning (`<script>`, event handlers, `javascript:`).
+  - `apps/api`: Implemented `ImportsController` exposing `POST /api/v1/imports/markdown/parse` (preview) and `POST /api/v1/imports/markdown/commit` (transactional Prisma persistence with bank ownership verification). Added 12 unit tests and 4 markdown test fixtures.
+  - `apps/web`: Created `MarkdownMathPreview` component integrating KaTeX math formatting (`$...$` and `$$...$$`) with sanitized markdown, `useMarkdownImport` TanStack Query mutation hooks, and dual-pane `MarkdownImportPage` featuring sample template, real-time preview, line error badges, and transactional commit CTA.
+  - `apps/web`: Registered `/question-banks/:id/import` route and updated `QuestionBankDetailPage` with direct navigation and math equation rendering.
+- **Validation**:
+  - `pnpm format:check` — PASSED (Prettier).
+  - `pnpm lint` — PASSED (0 errors, 0 warnings across all workspaces).
+  - `pnpm typecheck` — PASSED (all packages/apps).
+  - Unit tests: 184/184 tests PASSED (41 in validation, 83 in api, 60 in web).
+  - `pnpm build` — PASSED (Vite + NestJS API).
+- **Next Step**: Review and merge `feat/S06-markdown-import` into `main`, then proceed to Stage S07: Test Builder and Publishing.
+
+### [2026-11-08] Stage S06 - AI Prompt Generator, Bank Selector Modal & AI Verification Banner
+
+- **Branch**: `feat/S06-markdown-import`
+- **Changes**:
+  - `apps/web/src/components/import/GeneratePromptModal.tsx`: Created modal for customizable AI prompt generation (subject, question count, question types, difficulty, score scale, auto points-per-question calculation with 0.05 step increments, advisory warnings for high question counts, and 1-click copy).
+  - `apps/web/src/components/import/SelectTargetBankModal.tsx`: Created modal when importing questions from sidebar `/import` without pre-selected bank ID, enabling selection of existing banks or creating new bank on the fly.
+  - `apps/web/src/pages/import/MarkdownImportPage.tsx`: Integrated `GeneratePromptModal` and `SelectTargetBankModal`, added difficulty label toggle checkbox, and added an optimized AI content verification advisory banner reminding educators to review AI-generated questions and formula formatting before importing.
+  - `apps/web/src/pages/import/MarkdownImportPage.test.tsx`: Added 5 unit/integration tests covering AI prompt generator, bank selection modal, score step calculations, and AI verification banner.
+- **Validation**:
+  - `pnpm format:check` — PASSED (Prettier).
+  - `pnpm lint` — PASSED (0 errors, 0 warnings).
+  - `pnpm typecheck` — PASSED (all 4 workspace projects).
+  - `pnpm --filter @quizforge/web test --run` — PASSED (65/65 tests across 11 suites).
+- **Next Step**: Await user command or proceed to Stage S07: Test Builder and Publishing.
+
+### [2026-11-08] Stage S06 - Markdown Error Diagnostic Copy Features
+
+- **Branch**: `feat/S06-markdown-import`
+- **Changes**:
+  - `apps/web/src/pages/import/MarkdownImportPage.tsx`: Added comprehensive error copying capabilities in the Diagnostics Report card:
+    - "Sao chép tất cả lỗi" button in the card header, compiling an AI-ready summary of all syntax errors and warnings with line numbers and remediation tips.
+    - Individual copy button on each diagnostic card with accessible `aria-label`, tooltip, and animated state (`Đã chép` checkmark feedback).
+  - `apps/web/src/pages/import/MarkdownImportPage.test.tsx`: Added unit test covering single diagnostic and batch diagnostics clipboard copy interactions.
+- **Validation**:
+  - `pnpm format:check` — PASSED (Prettier).
+  - `pnpm lint` — PASSED (0 errors, 0 warnings).
+  - `pnpm typecheck` — PASSED (all 4 workspace projects).
+  - `pnpm --filter @quizforge/web test --run` — PASSED (66/66 web tests passed).
+  - `pnpm --filter @quizforge/api test -- src/` — PASSED (83/83 unit tests passed).
+- **Next Step**: Await user instructions.
+
+### [2026-11-08] Stage S06 - KaTeX Math & Markdown Rich Text Rendering in Explanations & Prompts
+
+- **Branch**: `feat/S06-markdown-import`
+- **Changes**:
+  - `apps/web/src/components/common/MarkdownMathPreview.tsx`: Added `whitespace-pre-line` newline preserving behavior and custom `strong`/`em` element renderers for natural multi-line step-by-step mathematical solutions.
+  - `apps/web/src/pages/import/MarkdownImportPage.tsx`: Wrapped question explanations, option explanations, and essay model answers with `<MarkdownMathPreview />` instead of raw text interpolation.
+  - `apps/web/src/pages/question-banks/QuestionBankDetailPage.tsx`: Upgraded explanation cards and essay model answers to render formatted KaTeX equations and markdown rich text.
+  - `apps/api/src/modules/imports/markdown-parser.service.ts`: Improved `extractTextFromNode` to preserve markdown formatting tokens (`**bold**`, `*italic*`, `~~strike~~`, newlines `\n` from breaks), and enabled multi-line continuation for metadata fields in blockquotes (such as detailed multi-line mathematical explanations).
+  - Test suites: Added test cases in `MarkdownMathPreview.test.tsx` and `markdown-parser.service.spec.ts` verifying rendering of complex multi-line algebra derivations and LaTeX set notations.
+- **Validation**:
+  - `pnpm format:check` — PASSED (Prettier).
+  - `pnpm lint` — PASSED (0 errors, 0 warnings).
+  - `pnpm typecheck` — PASSED (all workspace projects).
+  - `pnpm --filter @quizforge/web test --run` — PASSED (67/67 web tests).
+  - `pnpm --filter @quizforge/api test -- src/` — PASSED (84/84 api unit tests).
+- **Next Step**: Await user instructions or proceed to Stage S07.

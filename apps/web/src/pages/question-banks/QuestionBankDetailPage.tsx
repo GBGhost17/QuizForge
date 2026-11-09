@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { EmptyState } from '../../components/common/EmptyState';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { MarkdownMathPreview } from '../../components/common/MarkdownMathPreview';
 import { QuestionEditorModal } from '../../components/questions/QuestionEditorModal';
 import type {
   CreateQuestionDto,
@@ -37,6 +38,7 @@ export function QuestionBankDetailPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<QuestionType | undefined>(undefined);
   const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | undefined>(undefined);
+  const [showDifficulty, setShowDifficulty] = useState(false);
   const [page, setPage] = useState(1);
 
   // Modals
@@ -96,18 +98,30 @@ export function QuestionBankDetailPage() {
     switch (difficulty) {
       case 'EASY':
         return (
-          <Badge variant="secondary" className="bg-emerald-50 text-emerald-700">
+          <Badge
+            data-testid="difficulty-badge"
+            variant="secondary"
+            className="bg-emerald-50 text-emerald-700"
+          >
             Dễ
           </Badge>
         );
       case 'MEDIUM':
         return (
-          <Badge variant="secondary" className="bg-amber-50 text-amber-700">
+          <Badge
+            data-testid="difficulty-badge"
+            variant="secondary"
+            className="bg-amber-50 text-amber-700"
+          >
             Trung bình
           </Badge>
         );
       case 'HARD':
-        return <Badge variant="destructive">Khó</Badge>;
+        return (
+          <Badge data-testid="difficulty-badge" variant="destructive">
+            Khó
+          </Badge>
+        );
       default:
         return null;
     }
@@ -161,7 +175,7 @@ export function QuestionBankDetailPage() {
           </div>
 
           <div className="flex items-center gap-2 self-start md:self-auto">
-            <Link to={`/import?bankId=${bank.id}`}>
+            <Link to={`/question-banks/${bank.id}/import`}>
               <Button variant="outline" size="sm" className="flex items-center gap-1.5">
                 <Upload className="h-4 w-4" /> Import Markdown
               </Button>
@@ -182,53 +196,67 @@ export function QuestionBankDetailPage() {
       </div>
 
       {/* Filter and Search Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <div className="relative md:col-span-2">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm nội dung câu hỏi..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setPage(1);
-            }}
-            className="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-hidden focus:ring-1 focus:ring-indigo-600"
-          />
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="relative md:col-span-2">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm nội dung câu hỏi..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
+              className="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-hidden focus:ring-1 focus:ring-indigo-600"
+            />
+          </div>
+
+          <div>
+            <select
+              value={typeFilter || ''}
+              onChange={(e) => {
+                setTypeFilter((e.target.value as QuestionType) || undefined);
+                setPage(1);
+              }}
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-600 focus:outline-hidden focus:ring-1 focus:ring-indigo-600"
+            >
+              <option value="">Tất cả loại câu hỏi</option>
+              <option value="SINGLE_CHOICE">Trắc nghiệm 1 đáp án</option>
+              <option value="MULTIPLE_CHOICE">Trắc nghiệm nhiều đáp án</option>
+              <option value="TRUE_FALSE">Đúng / Sai</option>
+              <option value="SHORT_ANSWER">Trả lời ngắn</option>
+              <option value="ESSAY">Tự luận</option>
+            </select>
+          </div>
+
+          <div>
+            <select
+              value={difficultyFilter || ''}
+              onChange={(e) => {
+                setDifficultyFilter((e.target.value as Difficulty) || undefined);
+                setPage(1);
+              }}
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-600 focus:outline-hidden focus:ring-1 focus:ring-indigo-600"
+            >
+              <option value="">Tất cả độ khó</option>
+              <option value="EASY">Dễ</option>
+              <option value="MEDIUM">Trung bình</option>
+              <option value="HARD">Khó</option>
+            </select>
+          </div>
         </div>
 
-        <div>
-          <select
-            value={typeFilter || ''}
-            onChange={(e) => {
-              setTypeFilter((e.target.value as QuestionType) || undefined);
-              setPage(1);
-            }}
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-600 focus:outline-hidden focus:ring-1 focus:ring-indigo-600"
-          >
-            <option value="">Tất cả loại câu hỏi</option>
-            <option value="SINGLE_CHOICE">Trắc nghiệm 1 đáp án</option>
-            <option value="MULTIPLE_CHOICE">Trắc nghiệm nhiều đáp án</option>
-            <option value="TRUE_FALSE">Đúng / Sai</option>
-            <option value="SHORT_ANSWER">Trả lời ngắn</option>
-            <option value="ESSAY">Tự luận</option>
-          </select>
-        </div>
-
-        <div>
-          <select
-            value={difficultyFilter || ''}
-            onChange={(e) => {
-              setDifficultyFilter((e.target.value as Difficulty) || undefined);
-              setPage(1);
-            }}
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-600 focus:outline-hidden focus:ring-1 focus:ring-indigo-600"
-          >
-            <option value="">Tất cả độ khó</option>
-            <option value="EASY">Dễ</option>
-            <option value="MEDIUM">Trung bình</option>
-            <option value="HARD">Khó</option>
-          </select>
+        <div className="flex items-center justify-end px-1">
+          <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-600 hover:text-slate-900 select-none">
+            <input
+              type="checkbox"
+              checked={showDifficulty}
+              onChange={(e) => setShowDifficulty(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span>Hiện nhãn độ khó</span>
+          </label>
         </div>
       </div>
 
@@ -266,7 +294,7 @@ export function QuestionBankDetailPage() {
                     Câu {(page - 1) * 15 + idx + 1}
                   </span>
                   <Badge variant="outline">{getQuestionTypeLabel(q.type)}</Badge>
-                  {getDifficultyBadge(q.difficulty)}
+                  {showDifficulty && getDifficultyBadge(q.difficulty)}
                   <Badge variant="secondary">{q.defaultPoints} điểm</Badge>
                   {q.topic && (
                     <span className="text-xs font-medium text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
@@ -300,8 +328,8 @@ export function QuestionBankDetailPage() {
 
               <CardContent className="p-5 space-y-4">
                 {/* Prompt */}
-                <div className="text-base font-medium text-slate-900 whitespace-pre-wrap">
-                  {q.prompt}
+                <div className="text-base font-medium text-slate-900">
+                  <MarkdownMathPreview content={q.prompt} />
                 </div>
 
                 {/* Options Presentation */}
@@ -327,7 +355,9 @@ export function QuestionBankDetailPage() {
                         >
                           {String.fromCharCode(65 + oIdx)}
                         </span>
-                        <span className="flex-1">{opt.text}</span>
+                        <span className="flex-1">
+                          <MarkdownMathPreview content={opt.text} />
+                        </span>
                         {opt.isCorrect && (
                           <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
                         )}
@@ -360,10 +390,10 @@ export function QuestionBankDetailPage() {
                   <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2 text-xs">
                     {q.rubric?.modelAnswer && (
                       <div>
-                        <span className="font-semibold text-slate-700">Gợi ý / Đáp án mẫu:</span>
-                        <p className="text-slate-600 mt-0.5 whitespace-pre-wrap">
-                          {q.rubric.modelAnswer}
-                        </p>
+                        <span className="font-semibold text-slate-700 block mb-1">
+                          Gợi ý / Đáp án mẫu:
+                        </span>
+                        <MarkdownMathPreview content={q.rubric.modelAnswer} className="text-xs" />
                       </div>
                     )}
                     {q.rubric?.criteria && q.rubric.criteria.length > 0 && (
@@ -385,9 +415,9 @@ export function QuestionBankDetailPage() {
 
                 {/* Explanation */}
                 {q.explanation && (
-                  <div className="text-xs text-slate-500 bg-amber-50/50 rounded-lg p-2.5 border border-amber-200/50">
-                    <span className="font-semibold text-amber-800">Lời giải chi tiết: </span>
-                    {q.explanation}
+                  <div className="text-xs text-slate-700 bg-amber-50/50 rounded-lg p-2.5 border border-amber-200/50 space-y-1">
+                    <span className="font-semibold text-amber-800 block">Lời giải chi tiết:</span>
+                    <MarkdownMathPreview content={q.explanation} className="text-xs" />
                   </div>
                 )}
 
