@@ -305,7 +305,6 @@ export function QuestionBankDetailPage() {
                   </span>
                   <Badge variant="outline">{getQuestionTypeLabel(q.type)}</Badge>
                   {showDifficulty && getDifficultyBadge(q.difficulty)}
-                  <Badge variant="secondary">{q.defaultPoints} điểm</Badge>
                   {q.topic && (
                     <span className="text-xs font-medium text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
                       {q.topic}
@@ -414,7 +413,7 @@ export function QuestionBankDetailPage() {
                         <ul className="list-disc list-inside mt-1 space-y-0.5 text-slate-600">
                           {q.rubric.criteria.map((c, cIdx) => (
                             <li key={cIdx}>
-                              {c.description} ({c.points} điểm)
+                              {c.description}
                             </li>
                           ))}
                         </ul>

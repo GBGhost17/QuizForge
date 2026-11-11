@@ -4,6 +4,7 @@ import { CreateQuestionSchema } from '@quizforge/validation';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Alert, AlertDescription } from '../ui/alert';
+import { MarkdownMathPreview } from '../common/MarkdownMathPreview';
 import type {
   CreateQuestionDto,
   Difficulty,
@@ -287,7 +288,7 @@ export function QuestionEditorModal({
             {questionToEdit ? 'Chỉnh sửa câu hỏi' : 'Thêm câu hỏi mới'}
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Thiết lập nội dung câu hỏi, loại câu hỏi, đáp án và điểm số mặc định.
+            Thiết lập nội dung câu hỏi, loại câu hỏi, đáp án và lời giải chi tiết.
           </p>
         </div>
 
@@ -299,7 +300,7 @@ export function QuestionEditorModal({
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4 overflow-y-auto pr-2 flex-1">
           {/* Question Type & Difficulty */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="q-type" className="block text-sm font-medium text-slate-700 mb-1">
                 Loại câu hỏi
@@ -336,35 +337,35 @@ export function QuestionEditorModal({
                 <option value="HARD">Khó</option>
               </select>
             </div>
-
-            <div>
-              <Input
-                id="q-points"
-                type="number"
-                label="Điểm mặc định"
-                value={defaultPoints}
-                onChange={(e) => setDefaultPoints(parseFloat(e.target.value) || 0)}
-                step="0.05"
-                min="0.05"
-                required
-              />
-            </div>
           </div>
 
           {/* Prompt */}
           <div className="space-y-1">
-            <label htmlFor="q-prompt" className="block text-sm font-medium text-slate-700">
-              Nội dung câu hỏi (hỗ trợ Markdown) <span className="text-rose-500">*</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="q-prompt" className="block text-sm font-medium text-slate-700">
+                Nội dung câu hỏi (hỗ trợ KaTeX / Markdown) <span className="text-rose-500">*</span>
+              </label>
+              {prompt && (
+                <span className="text-xs text-indigo-600 font-medium">Hỗ trợ KaTeX & Markdown</span>
+              )}
+            </div>
             <textarea
               id="q-prompt"
-              rows={4}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-hidden focus:ring-1 focus:ring-indigo-600"
-              placeholder="Nhập nội dung câu hỏi..."
+              rows={3}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-hidden focus:ring-1 focus:ring-indigo-600 font-mono"
+              placeholder="Nhập nội dung câu hỏi (sử dụng $...$ hoặc $$...$$ cho công thức toán)..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               required
             />
+            {prompt.trim() && (
+              <div className="rounded-lg border border-indigo-100 bg-indigo-50/30 p-2.5 text-xs text-slate-800">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 block mb-1">
+                  Xem trước hiển thị:
+                </span>
+                <MarkdownMathPreview content={prompt} />
+              </div>
+            )}
           </div>
 
           {/* Type-Specific Options Manager */}
@@ -587,11 +588,19 @@ export function QuestionEditorModal({
             <textarea
               id="q-explanation"
               rows={2}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-hidden focus:ring-1 focus:ring-indigo-600"
-              placeholder="Hiển thị cho học sinh sau khi hoàn thành bài thi hoặc trong chế độ luyện tập..."
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-hidden focus:ring-1 focus:ring-indigo-600 font-mono"
+              placeholder="Hiển thị cho học sinh sau khi hoàn thành bài thi hoặc trong chế độ luyện tập (hỗ trợ KaTeX)..."
               value={explanation}
               onChange={(e) => setExplanation(e.target.value)}
             />
+            {explanation.trim() && (
+              <div className="rounded-lg border border-amber-200/60 bg-amber-50/40 p-2.5 text-xs text-slate-800">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-700 block mb-1">
+                  Xem trước lời giải:
+                </span>
+                <MarkdownMathPreview content={explanation} />
+              </div>
+            )}
           </div>
 
           <div className="pt-4 border-t border-slate-100 flex justify-end gap-3 shrink-0">

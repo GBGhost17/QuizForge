@@ -5,6 +5,7 @@ import { Label } from '../ui/label';
 import { useQuestionBanks } from '../../hooks/useQuestionBanks';
 import { useQuestions } from '../../hooks/useQuestions';
 import { Check, CheckSquare, Search, Square, X } from 'lucide-react';
+import { MarkdownMathPreview } from '../common/MarkdownMathPreview';
 import type { Difficulty } from '@quizforge/shared-types';
 
 interface QuestionPickerModalProps {
@@ -280,9 +281,9 @@ export function QuestionPickerModal({
                         </span>
                       )}
                     </div>
-                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100 line-clamp-2">
-                      {q.prompt}
-                    </p>
+                    <div className="text-sm font-medium text-slate-800 dark:text-slate-100 line-clamp-2">
+                      <MarkdownMathPreview content={q.prompt} />
+                    </div>
                     {q.options && q.options.length > 0 && (
                       <div className="text-xs text-slate-500 dark:text-slate-400">
                         {q.options.length} lựa chọn đáp án

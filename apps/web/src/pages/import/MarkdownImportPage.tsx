@@ -664,8 +664,6 @@ function QuestionPreviewCard({
             )}
           </div>
           <div className="flex items-center space-x-2 text-xs text-slate-500">
-            <span>{q.defaultPoints} điểm</span>
-            <span>•</span>
             <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
               Dòng {q.rawSourceLine}
             </span>
@@ -750,7 +748,7 @@ function QuestionPreviewCard({
                 <ul className="list-disc pl-4 mt-0.5 space-y-0.5">
                   {q.rubric.criteria.map((c, cIdx) => (
                     <li key={cIdx} className="text-slate-600 dark:text-slate-400">
-                      {c.description} ({c.points} điểm)
+                      {c.description}
                     </li>
                   ))}
                 </ul>

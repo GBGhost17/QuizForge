@@ -6,6 +6,7 @@ import {
   Check,
   CheckCircle,
   Eye,
+  HelpCircle,
   Plus,
   Save,
   Send,
@@ -709,6 +710,20 @@ export function TestEditorPage() {
                               </div>
                             );
                           })}
+                        </div>
+                      )}
+
+                      {snap.explanation && (
+                        <div className="rounded-md bg-slate-50 p-2.5 text-xs text-slate-600 dark:bg-slate-800/60 dark:text-slate-300 flex items-start gap-2 mt-2">
+                          <HelpCircle className="h-4 w-4 text-indigo-500 shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                              Lời giải chi tiết:
+                            </span>
+                            <div className="mt-0.5">
+                              <MarkdownMathPreview content={snap.explanation} />
+                            </div>
+                          </div>
                         </div>
                       )}
                     </CardContent>
