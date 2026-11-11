@@ -90,6 +90,12 @@ ${scope ? `- **Phạm vi kiến thức & Yêu cầu trọng tâm**: ${scope}` : 
 ${includeExplanation ? '- **Lời giải**: Bắt buộc có phần giải thích chi tiết cho từng câu hỏi.' : ''}
 ${includeKaTeX ? '- **Công thức Toán / Khoa học**: Mọi công thức Toán/Lý/Hóa hoặc ký hiệu khoa học PHẢI viết bằng cú pháp KaTeX/LaTeX ($...$ cho inline và $$...$$ cho khối công thức riêng).' : ''}
 
+- **QUY CHUẨN TIÊU ĐỀ VÀ ĐỀ BÀI (RẤT QUAN TRỌNG)**:
+  + Tiêu đề câu hỏi chỉ ghi chỉ số thứ tự: \`## Q1\`, \`## Q2\`, \`## Q3\`... (hoặc \`## Câu 1\`, \`## Câu 2\`...).
+  + TUYỆT ĐỐI KHÔNG viết tên dạng bài, thể loại bài hay chủ đề vào tiêu đề \`##\` hay chèn vào nội dung đề bài (Ví dụ: KHÔNG viết "Dạng bài: Thì hiện tại đơn", KHÔNG chèn tiêu đề thể loại trước câu hỏi).
+  + Nếu có dạng bài/chủ đề thì PHẢI khai báo trong thuộc tính \`> topic: [Tên dạng bài]\`.
+  + Phần thân văn bản bên dưới là nội dung câu hỏi thực tế nguyên bản để thí sinh đọc và làm bài.
+
 ---
 
 ### 2. QUY CHUẨN ĐỊNH DẠNG MARKDOWN QUIZFORGE BẮT BUỘC:
@@ -104,13 +110,13 @@ subject: "${subject || 'Chung'}"
 tags: [on-tap, kiem-tra]
 ---
 
-## Q1: [Nội dung câu hỏi ngắn gọn hoặc tiêu đề]
+## Q1
 > type: SINGLE_CHOICE
 > difficulty: EASY
 > topic: ${subject || 'Chủ đề 1'}
 > explanation: Lời giải thích vì sao đáp án này đúng
 
-Nội dung câu hỏi chi tiết. Nếu có công thức toán học thì dùng $x^2 + 2x = 0$ hoặc:
+Nội dung câu hỏi chi tiết để học sinh làm bài. Nếu có công thức toán học thì dùng $x^2 + 2x = 0$ hoặc:
 $$\\int_{0}^{1} x dx$$
 
 - [x] Phương án đúng // Giải thích ngắn (tùy chọn)
@@ -118,9 +124,10 @@ $$\\int_{0}^{1} x dx$$
 - [ ] Phương án sai B
 - [ ] Phương án sai C
 
-## Q2: [Câu hỏi nhiều lựa chọn nếu có]
+## Q2
 > type: MULTIPLE_CHOICE
 > difficulty: MEDIUM
+> topic: ${subject || 'Chủ đề 2'}
 > explanation: Giải thích các phương án đúng
 
 Chọn các mệnh đề chính xác:
@@ -128,26 +135,29 @@ Chọn các mệnh đề chính xác:
 - [x] Mệnh đề đúng thứ hai
 - [ ] Mệnh đề sai
 
-## Q3: [Câu hỏi Đúng / Sai]
+## Q3
 > type: TRUE_FALSE
 > difficulty: EASY
+> topic: ${subject || 'Chủ đề 3'}
 > explanation: Giải thích tính đúng sai của nhận định
 
 Nhận định: Số nguyên tố chẵn duy nhất là số 2.
 - [x] Đúng
 - [ ] Sai
 
-## Q4: [Câu hỏi điền đáp án ngắn]
+## Q4
 > type: SHORT_ANSWER
 > difficulty: MEDIUM
+> topic: ${subject || 'Chủ đề 4'}
 > acceptedAnswers: [4, 4.0, bốn]
 > explanation: Căn bậc hai số học của 16 là 4.
 
 Tính căn bậc hai số học của 16.
 
-## Q5: [Câu hỏi tự luận]
+## Q5
 > type: ESSAY
 > difficulty: HARD
+> topic: ${subject || 'Chủ đề 5'}
 > rubric: Tiêu chí 1: nêu đúng định nghĩa; Tiêu chí 2: cho ví dụ minh họa
 > modelAnswer: Trình bày chi tiết bài giải mẫu hoàn chỉnh tại đây...
 

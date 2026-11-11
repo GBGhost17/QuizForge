@@ -654,6 +654,14 @@ function QuestionPreviewCard({
               {getTypeLabel(q.type)}
             </Badge>
             {showDifficulty && getDifficultyBadge(q.difficulty)}
+            {q.topic && (
+              <Badge
+                variant="secondary"
+                className="text-[10px] py-0 px-1.5 font-normal text-slate-600 dark:text-slate-300"
+              >
+                {q.topic}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center space-x-2 text-xs text-slate-500">
             <span>{q.defaultPoints} điểm</span>
