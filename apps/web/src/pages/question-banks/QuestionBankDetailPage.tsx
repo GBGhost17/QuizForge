@@ -415,9 +415,7 @@ export function QuestionBankDetailPage() {
                         </span>
                         <ul className="list-disc list-inside mt-1 space-y-0.5 text-slate-600">
                           {q.rubric.criteria.map((c, cIdx) => (
-                            <li key={cIdx}>
-                              {c.description}
-                            </li>
+                            <li key={cIdx}>{c.description}</li>
                           ))}
                         </ul>
                       </div>

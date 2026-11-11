@@ -45,4 +45,3 @@ Dòng 4: Chúc các em ôn tập thật tốt và đạt điểm cao trong kỳ 
     expect(screen.getByRole('button', { name: /xem thêm/i })).toBeTruthy();
   });
 });
-

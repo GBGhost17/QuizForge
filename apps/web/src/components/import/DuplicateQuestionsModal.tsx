@@ -207,11 +207,16 @@ export function DuplicateQuestionsModal({
                   {/* Right: Existing Question in Bank */}
                   <div className="space-y-2 md:pl-4">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-emerald-700 border-emerald-300 bg-emerald-50 text-[10px] dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                      <Badge
+                        variant="outline"
+                        className="text-emerald-700 border-emerald-300 bg-emerald-50 text-[10px] dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                      >
                         Đã có sẵn trong ngân hàng
                       </Badge>
                       {dup.existingQuestionType && (
-                        <span className="text-[11px] text-slate-400">{dup.existingQuestionType}</span>
+                        <span className="text-[11px] text-slate-400">
+                          {dup.existingQuestionType}
+                        </span>
                       )}
                     </div>
                     <div className="text-sm font-medium text-slate-900 dark:text-white p-3 rounded-lg bg-slate-50 border border-slate-200/80 dark:bg-slate-800/40 dark:border-slate-800">
@@ -240,24 +245,20 @@ export function DuplicateQuestionsModal({
           </div>
 
           <div className="flex items-center justify-end gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Hủy bỏ
             </Button>
             <Button
               type="button"
               onClick={handleConfirm}
-              disabled={isSubmitting || (remainingCount === 0 && excludedIndices.size === totalQuestionsCount)}
+              disabled={
+                isSubmitting ||
+                (remainingCount === 0 && excludedIndices.size === totalQuestionsCount)
+              }
               className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2"
             >
               <Check className="h-4 w-4" />
-              {isSubmitting
-                ? 'Đang nhập...'
-                : `Xác nhận & Tiến hành nhập (${remainingCount} câu)`}
+              {isSubmitting ? 'Đang nhập...' : `Xác nhận & Tiến hành nhập (${remainingCount} câu)`}
             </Button>
           </div>
         </div>

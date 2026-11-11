@@ -8,20 +8,22 @@
  */
 export function normalizeTextForComparison(text: string): string {
   if (!text) return '';
-  return text
-    .toLowerCase()
-    .normalize('NFC')
-    // Remove markdown math delimiters ($, $$)
-    .replace(/\$\$/g, ' ')
-    .replace(/\$/g, ' ')
-    // Remove markdown code blocks and formatting characters
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/[`*_~#>[\]()]/g, ' ')
-    // Replace all non-letter and non-number characters with space, preserving all Unicode letters
-    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
-    // Collapse whitespace
-    .replace(/\s+/g, ' ')
-    .trim();
+  return (
+    text
+      .toLowerCase()
+      .normalize('NFC')
+      // Remove markdown math delimiters ($, $$)
+      .replace(/\$\$/g, ' ')
+      .replace(/\$/g, ' ')
+      // Remove markdown code blocks and formatting characters
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/[`*_~#>[\]()]/g, ' ')
+      // Replace all non-letter and non-number characters with space, preserving all Unicode letters
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      // Collapse whitespace
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
 }
 
 /**
@@ -128,11 +130,7 @@ export function calculateTextSimilarity(text1: string, text2: string): number {
     }
   }
 
-  const finalScore = Math.max(
-    wordDice,
-    levRatio,
-    wordDice * 0.7 + levRatio * 0.3,
-  );
+  const finalScore = Math.max(wordDice, levRatio, wordDice * 0.7 + levRatio * 0.3);
 
   return Math.min(1.0, Math.max(0.0, Math.round(finalScore * 100) / 100));
 }
@@ -169,9 +167,7 @@ export function extractQuestionComponents(rawText: string): ExtractedQuestionCom
   });
 
   // Normalized math representation: lowercase and remove all whitespace
-  const combinedMath = mathExpressions
-    .map((m) => m.toLowerCase().replace(/\s+/g, ''))
-    .join(';');
+  const combinedMath = mathExpressions.map((m) => m.toLowerCase().replace(/\s+/g, '')).join(';');
 
   return {
     mathExpressions,
@@ -229,8 +225,8 @@ export function calculateQuestionSimilarity(
 
     // CORE FOCUS GUARD: If math formulas differ significantly (mathSim < 0.70),
     // questions are intrinsically different problems despite identical prose lead-ins!
-    if (mathSim < 0.70) {
-      finalSimilarity = Math.min(0.40, mathSim * 0.6 + proseSim * 0.1);
+    if (mathSim < 0.7) {
+      finalSimilarity = Math.min(0.4, mathSim * 0.6 + proseSim * 0.1);
     } else {
       // Formulas match closely: math formula is primary focal point (85% weight)
       finalSimilarity = mathSim * 0.85 + proseSim * 0.15;
@@ -239,7 +235,7 @@ export function calculateQuestionSimilarity(
   // CASE 2: One question has formulas while the other is purely textual
   else if (comp1.hasMath !== comp2.hasMath) {
     const overallSim = calculateTextSimilarity(p1, p2);
-    finalSimilarity = Math.min(0.50, overallSim * 0.6);
+    finalSimilarity = Math.min(0.5, overallSim * 0.6);
   }
   // CASE 3: Both questions are textual
   else {
@@ -278,7 +274,7 @@ export function calculateQuestionSimilarity(
         } else {
           finalSimilarity *= 0.8;
         }
-      } else if (optionsSim >= 0.80 && finalSimilarity >= 0.80) {
+      } else if (optionsSim >= 0.8 && finalSimilarity >= 0.8) {
         finalSimilarity = Math.min(1.0, finalSimilarity * 0.85 + optionsSim * 0.15);
       }
     }

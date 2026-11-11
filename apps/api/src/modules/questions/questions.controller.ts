@@ -22,12 +22,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { QuestionsService } from './questions.service';
-import {
-  CheckDuplicatesDto,
-  CreateQuestionDto,
-  QuestionQueryDto,
-  UpdateQuestionDto,
-} from './dto';
+import { CheckDuplicatesDto, CreateQuestionDto, QuestionQueryDto, UpdateQuestionDto } from './dto';
 import { CurrentUser } from '../auth/decorators';
 import { JwtAuthGuard } from '../auth/guards';
 import type { CheckDuplicatesResult, PaginatedResult, Question } from '@quizforge/shared-types';

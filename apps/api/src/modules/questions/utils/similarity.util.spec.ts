@@ -97,17 +97,11 @@ describe('Similarity Utility', () => {
     it('reduces similarity score when choice options are completely different', () => {
       const q1 = {
         prompt: 'Chọn khẳng định đúng trong các khẳng định sau:',
-        options: [
-          { text: 'Hàm số đồng biến trên R' },
-          { text: 'Hàm số nghịch biến trên R' },
-        ],
+        options: [{ text: 'Hàm số đồng biến trên R' }, { text: 'Hàm số nghịch biến trên R' }],
       };
       const q2 = {
         prompt: 'Chọn khẳng định đúng trong các khẳng định sau:',
-        options: [
-          { text: 'Số 2 là số nguyên tố' },
-          { text: 'Số 4 là số nguyên tố' },
-        ],
+        options: [{ text: 'Số 2 là số nguyên tố' }, { text: 'Số 4 là số nguyên tố' }],
       };
 
       const score = calculateQuestionSimilarity(q1, q2);

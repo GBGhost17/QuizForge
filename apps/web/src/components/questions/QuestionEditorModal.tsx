@@ -325,7 +325,12 @@ export function QuestionEditorModal({
       .map((t) => t.trim())
       .filter(Boolean);
 
-    let finalOptions: Array<{ text: string; isCorrect: boolean; explanation?: string; order?: number }> = [];
+    let finalOptions: Array<{
+      text: string;
+      isCorrect: boolean;
+      explanation?: string;
+      order?: number;
+    }> = [];
     let rubric: CreateQuestionDto['rubric'] = undefined;
 
     if (type === 'SINGLE_CHOICE' || type === 'MULTIPLE_CHOICE' || type === 'TRUE_FALSE') {

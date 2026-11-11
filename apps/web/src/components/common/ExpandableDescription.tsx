@@ -86,4 +86,3 @@ export const ExpandableDescription: React.FC<ExpandableDescriptionProps> = ({
     </div>
   );
 };
-
