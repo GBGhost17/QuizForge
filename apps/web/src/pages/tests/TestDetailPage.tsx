@@ -22,6 +22,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { MarkdownMathPreview } from '../../components/common/MarkdownMathPreview';
+import { ExpandableDescription } from '../../components/common/ExpandableDescription';
 import { QRCodeModal } from '../../components/tests/QRCodeModal';
 import type { QuestionOption } from '@quizforge/shared-types';
 
@@ -167,7 +168,13 @@ export function TestDetailPage() {
             </Badge>
           </div>
           {test.description && (
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{test.description}</p>
+            <div className="mt-2 max-w-2xl">
+              <ExpandableDescription
+                content={test.description}
+                collapsedMaxHeight={72}
+                emptyText=""
+              />
+            </div>
           )}
         </div>
 

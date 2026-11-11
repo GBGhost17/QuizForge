@@ -3,6 +3,7 @@ import { CreateQuestionBankSchema } from '@quizforge/validation';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Alert, AlertDescription } from '../ui/alert';
+import { MarkdownMathPreview } from '../common/MarkdownMathPreview';
 import type { QuestionBank } from '@quizforge/shared-types';
 
 interface QuestionBankModalProps {
@@ -100,12 +101,20 @@ export function QuestionBankModal({
             </label>
             <textarea
               id="bank-description"
-              rows={3}
+              rows={4}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-hidden focus:ring-1 focus:ring-indigo-600"
-              placeholder="Ghi chú về phạm vi kiến thức, đối tượng học sinh..."
+              placeholder="Ghi chú về phạm vi kiến thức, đối tượng học sinh, mục tiêu kiểm tra (hỗ trợ xuống dòng và định dạng Markdown)..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+            {description.trim() && (
+              <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-700 max-h-40 overflow-y-auto">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">
+                  Xem trước mô tả:
+                </span>
+                <MarkdownMathPreview content={description} />
+              </div>
+            )}
           </div>
 
           <div className="mt-6 flex justify-end gap-3">

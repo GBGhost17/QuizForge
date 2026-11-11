@@ -24,6 +24,7 @@ import { Badge } from '../../components/ui/badge';
 import { EmptyState } from '../../components/common/EmptyState';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { MarkdownMathPreview } from '../../components/common/MarkdownMathPreview';
+import { ExpandableDescription } from '../../components/common/ExpandableDescription';
 import { QuestionEditorModal } from '../../components/questions/QuestionEditorModal';
 import type {
   CreateQuestionDto,
@@ -163,12 +164,14 @@ export function QuestionBankDetailPage() {
       {/* Header Banner */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-          <div className="space-y-1.5 max-w-2xl">
+          <div className="space-y-2 max-w-3xl flex-1 min-w-0">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">{bank.title}</h1>
-            <p className="text-sm text-slate-600">
-              {bank.description || 'Chưa có mô tả cho ngân hàng câu hỏi này.'}
-            </p>
-            <div className="flex items-center gap-2 pt-2">
+            <ExpandableDescription
+              content={bank.description}
+              collapsedMaxHeight={72}
+              emptyText="Chưa có mô tả cho ngân hàng câu hỏi này."
+            />
+            <div className="flex items-center gap-2 pt-1">
               <Badge variant="secondary">Tổng số: {questionsData?.meta.total ?? 0} câu hỏi</Badge>
               {bank.isArchived && <Badge variant="outline">Đã lưu trữ</Badge>}
             </div>
