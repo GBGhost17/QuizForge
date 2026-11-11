@@ -6,6 +6,7 @@ import { QuestionBanksModule } from './modules/question-banks/question-banks.mod
 import { QuestionsModule } from './modules/questions/questions.module';
 import { ImportsModule } from './modules/imports/imports.module';
 import { TestsModule } from './modules/tests/tests.module';
+import { AttemptsModule } from './modules/attempts/attempts.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -20,6 +21,7 @@ import { PrismaModule } from './prisma/prisma.module';
     QuestionsModule,
     ImportsModule,
     TestsModule,
+    AttemptsModule,
   ],
 })
 export class AppModule {}
