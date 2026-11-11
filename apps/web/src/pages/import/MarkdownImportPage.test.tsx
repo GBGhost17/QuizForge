@@ -9,15 +9,18 @@ import {
   useCreateQuestionBank,
 } from '../../hooks/useQuestionBanks';
 import { useMarkdownImport } from '../../hooks/useMarkdownImport';
+import { useCheckDuplicates } from '../../hooks/useQuestions';
 import type { QuestionBank } from '@quizforge/shared-types';
 
 vi.mock('../../hooks/useQuestionBanks');
 vi.mock('../../hooks/useMarkdownImport');
+vi.mock('../../hooks/useQuestions');
 
 describe('MarkdownImportPage', () => {
   let queryClient: QueryClient;
   const mockParse = vi.fn();
   const mockCommit = vi.fn();
+  const mockCheckDuplicates = vi.fn();
 
   afterEach(() => {
     cleanup();
@@ -70,6 +73,17 @@ describe('MarkdownImportPage', () => {
       commitError: null,
       commitResult: undefined,
     });
+
+    mockCheckDuplicates.mockResolvedValue({
+      hasDuplicates: false,
+      duplicates: [],
+      checkedCount: 1,
+    });
+
+    vi.mocked(useCheckDuplicates).mockReturnValue({
+      mutateAsync: mockCheckDuplicates,
+      isPending: false,
+    } as unknown as ReturnType<typeof useCheckDuplicates>);
   });
 
   const renderComponent = (initialEntry = '/question-banks/bank-1/import') => {
@@ -155,11 +169,11 @@ describe('MarkdownImportPage', () => {
 
     expect(screen.getByText('Xem trước câu hỏi (1 câu hợp lệ)')).toBeTruthy();
     expect(screen.getByText('Trắc nghiệm 1 đáp án')).toBeTruthy();
-    expect(screen.queryByText('Dễ')).toBeNull(); // Mặc định không hiện nhãn độ khó
+    expect(screen.getByText('Dễ')).toBeTruthy(); // Mặc định hiển thị nhãn độ khó
 
-    // Bật tùy chọn hiển thị nhãn độ khó
+    // Tắt tùy chọn hiển thị nhãn độ khó
     fireEvent.click(screen.getByLabelText(/hiện nhãn độ khó/i));
-    expect(screen.getByText('Dễ')).toBeTruthy();
+    expect(screen.queryByText('Dễ')).toBeNull();
 
     expect(screen.getByText('Dòng 5')).toBeTruthy();
   });
@@ -242,7 +256,9 @@ describe('MarkdownImportPage', () => {
     expect((commitBtn as HTMLButtonElement).disabled).toBe(false);
 
     fireEvent.click(commitBtn);
-    expect(mockCommit).toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(mockCommit).toHaveBeenCalled();
+    });
   });
 
   it('opens GeneratePromptModal and generates customized prompt for AI', () => {
@@ -282,31 +298,16 @@ describe('MarkdownImportPage', () => {
     expect(screen.getByText(/giới hạn độ dài phản hồi/i)).toBeTruthy();
   });
 
-  it('automatically calculates points per question from total scale and question count', () => {
+  it('generates prompt without points configuration since points belong to test builder', () => {
     renderComponent();
 
     // Click "Tạo Prompt AI" button
     const promptBtn = screen.getByRole('button', { name: /tạo prompt ai/i });
     fireEvent.click(promptBtn);
 
-    const countInput = screen.getByLabelText(/số lượng câu hỏi/i) as HTMLInputElement;
-    const pointsInput = screen.getByLabelText(/điểm mỗi câu hỏi/i) as HTMLInputElement;
-    const scaleInput = screen.getByLabelText(/tổng thang điểm đề thi/i) as HTMLInputElement;
-
-    // Initial: 10 scale / 10 questions = 1.0 point
-    expect(pointsInput.value).toBe('1');
-
-    // Change question count to 20: 10 / 20 = 0.5 point
-    fireEvent.change(countInput, { target: { value: '20' } });
-    expect(pointsInput.value).toBe('0.5');
-
-    // Change question count to 40: 10 / 40 = 0.25 point
-    fireEvent.change(countInput, { target: { value: '40' } });
-    expect(pointsInput.value).toBe('0.25');
-
-    // Change total scale to 100: 100 / 40 = 2.5 points
-    fireEvent.change(scaleInput, { target: { value: '100' } });
-    expect(pointsInput.value).toBe('2.5');
+    // Không còn input thang điểm hay điểm mỗi câu trong ngân hàng
+    expect(screen.queryByLabelText(/điểm mỗi câu hỏi/i)).toBeNull();
+    expect(screen.queryByLabelText(/tổng thang điểm đề thi/i)).toBeNull();
   });
 
   it('opens SelectTargetBankModal when clicking commit from /import route without bankId', async () => {
@@ -361,9 +362,11 @@ describe('MarkdownImportPage', () => {
     const confirmBtn = screen.getByRole('button', { name: /xác nhận & nhập câu hỏi/i });
     fireEvent.click(confirmBtn);
 
-    expect(mockCommit).toHaveBeenCalledWith({
-      bankId: 'bank-1',
-      questions: expect.any(Array),
+    await vi.waitFor(() => {
+      expect(mockCommit).toHaveBeenCalledWith({
+        bankId: 'bank-1',
+        questions: expect.any(Array),
+      });
     });
   });
 
@@ -481,5 +484,139 @@ describe('MarkdownImportPage', () => {
     const copiedSinglePayload = secondCall?.[0] as string;
     expect(copiedSinglePayload).toContain('Dòng 5 [ERROR]: Thiếu phương án đúng');
     expect(copiedSinglePayload).toContain('Đánh dấu ít nhất một phương án đúng');
+  });
+
+  it('detects duplicate questions, opens duplicate comparison modal and commits only remaining questions when confirmed', async () => {
+    mockCheckDuplicates.mockResolvedValueOnce({
+      hasDuplicates: true,
+      checkedCount: 2,
+      duplicates: [
+        {
+          newQuestionIndex: 0,
+          newQuestionPrompt: 'Thủ đô của Việt Nam là gì?',
+          newQuestionType: 'SINGLE_CHOICE',
+          existingQuestionId: 'q-existing-1',
+          existingQuestionPrompt: 'Thủ đô của nước Cộng hòa Xã hội Chủ nghĩa Việt Nam là gì?',
+          existingQuestionType: 'SINGLE_CHOICE',
+          similarity: 0.88,
+        },
+      ],
+    });
+
+    mockCommit.mockResolvedValueOnce({
+      count: 1,
+      bankId: 'bank-1',
+      message: 'Đã nhập thành công 1 câu hỏi',
+    });
+
+    vi.mocked(useMarkdownImport).mockReturnValue({
+      parse: mockParse,
+      isParsing: false,
+      parseError: null,
+      parseResult: {
+        questions: [
+          {
+            type: 'SINGLE_CHOICE',
+            prompt: 'Thủ đô của Việt Nam là gì?',
+            difficulty: 'EASY',
+            defaultPoints: 1.0,
+            rawSourceLine: 2,
+            options: [
+              { text: 'Hà Nội', isCorrect: true },
+              { text: 'Huế', isCorrect: false },
+            ],
+          },
+          {
+            type: 'SINGLE_CHOICE',
+            prompt: 'Đỉnh núi cao nhất Việt Nam là gì?',
+            difficulty: 'EASY',
+            defaultPoints: 1.0,
+            rawSourceLine: 10,
+            options: [
+              { text: 'Fansipan', isCorrect: true },
+              { text: 'Bà Đen', isCorrect: false },
+            ],
+          },
+        ],
+        diagnostics: [],
+        totalQuestions: 2,
+        validQuestionsCount: 2,
+        hasErrors: false,
+      },
+      resetParse: vi.fn(),
+      commit: mockCommit,
+      isCommitting: false,
+      commitError: null,
+      commitResult: undefined,
+    });
+
+    renderComponent();
+
+    const commitBtn = screen.getByRole('button', { name: /Nhập 2 câu vào ngân hàng/i });
+    fireEvent.click(commitBtn);
+
+    // Duplicate check was invoked
+    expect(mockCheckDuplicates).toHaveBeenCalledWith({
+      bankId: 'bank-1',
+      dto: {
+        questions: [
+          {
+            prompt: 'Thủ đô của Việt Nam là gì?',
+            type: 'SINGLE_CHOICE',
+            options: [
+              { text: 'Hà Nội', isCorrect: true },
+              { text: 'Huế', isCorrect: false },
+            ],
+          },
+          {
+            prompt: 'Đỉnh núi cao nhất Việt Nam là gì?',
+            type: 'SINGLE_CHOICE',
+            options: [
+              { text: 'Fansipan', isCorrect: true },
+              { text: 'Bà Đen', isCorrect: false },
+            ],
+          },
+        ],
+      },
+    });
+
+    // Duplicate modal appears
+    expect(
+      await screen.findByRole('heading', {
+        name: /Phát hiện 1 câu hỏi có tỉ lệ trùng lặp cao/i,
+      }),
+    ).toBeTruthy();
+
+    expect(screen.getByText(/Độ tương đồng: 88%/i)).toBeTruthy();
+    expect(screen.getAllByText('Thủ đô của Việt Nam là gì?').length).toBeGreaterThan(0);
+    expect(
+      screen.getByText('Thủ đô của nước Cộng hòa Xã hội Chủ nghĩa Việt Nam là gì?'),
+    ).toBeTruthy();
+
+    // Confirm excluding the duplicate question (question 0 was selected by default)
+    const confirmBtn = screen.getByRole('button', {
+      name: /xác nhận & tiến hành nhập/i,
+    });
+    fireEvent.click(confirmBtn);
+
+    // Commit is invoked only with question 1
+    await vi.waitFor(() => {
+      expect(mockCommit).toHaveBeenCalledWith({
+        bankId: 'bank-1',
+        questions: [
+          {
+            type: 'SINGLE_CHOICE',
+            prompt: 'Đỉnh núi cao nhất Việt Nam là gì?',
+            difficulty: 'EASY',
+            defaultPoints: 1.0,
+            rawSourceLine: 10,
+            options: [
+              { text: 'Fansipan', isCorrect: true },
+              { text: 'Bà Đen', isCorrect: false },
+            ],
+          },
+        ],
+      });
+    });
   });
 });

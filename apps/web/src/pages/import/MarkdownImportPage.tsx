@@ -22,9 +22,11 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { MarkdownMathPreview } from '../../components/common/MarkdownMathPreview';
 import { useQuestionBank } from '../../hooks/useQuestionBanks';
 import { useMarkdownImport } from '../../hooks/useMarkdownImport';
+import { useCheckDuplicates } from '../../hooks/useQuestions';
 import { GeneratePromptModal } from '../../components/import/GeneratePromptModal';
 import { SelectTargetBankModal } from '../../components/import/SelectTargetBankModal';
-import type { ParsedQuestion, ImportDiagnostic } from '@quizforge/shared-types';
+import { DuplicateQuestionsModal } from '../../components/import/DuplicateQuestionsModal';
+import type { ParsedQuestion, ImportDiagnostic, DuplicateMatch } from '@quizforge/shared-types';
 
 export const SAMPLE_MARKDOWN_TEMPLATE = `---
 title: Ngân hàng mẫu Kiểm tra Kiến thức
@@ -95,11 +97,16 @@ export function MarkdownImportPage() {
 
   const { data: bank, isLoading: isBankLoading } = useQuestionBank(bankId || '');
   const { parse, isParsing, parseResult, commit, isCommitting } = useMarkdownImport();
+  const checkDuplicatesMutation = useCheckDuplicates();
 
   const [content, setContent] = useState('');
-  const [showDifficulty, setShowDifficulty] = useState(false);
+  const [showDifficulty, setShowDifficulty] = useState(true);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [isSelectBankModalOpen, setIsSelectBankModalOpen] = useState(false);
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const [duplicateMatches, setDuplicateMatches] = useState<DuplicateMatch[]>([]);
+  const [pendingTargetBankId, setPendingTargetBankId] = useState<string | null>(null);
+  const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
   const [commitSuccessMessage, setCommitSuccessMessage] = useState<string | null>(null);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [hasCopiedAllErrors, setHasCopiedAllErrors] = useState(false);
@@ -132,22 +139,92 @@ export function MarkdownImportPage() {
     reader.readAsText(file, 'utf-8');
   };
 
-  // Helper executing commit to a specific bank ID
-  const executeCommit = async (targetId: string) => {
-    if (!parseResult || parseResult.hasErrors || parseResult.questions.length === 0) {
+  // Finalize committing a set of questions into target bank
+  const finalizeCommit = async (targetId: string, questionsToCommit: ParsedQuestion[]) => {
+    if (questionsToCommit.length === 0) {
+      setGlobalError('Không có câu hỏi nào để thêm vào ngân hàng.');
       return;
     }
 
     setGlobalError(null);
     const result = await commit({
       bankId: targetId,
-      questions: parseResult.questions,
+      questions: questionsToCommit,
     });
 
     setCommitSuccessMessage(result.message);
     setTimeout(() => {
       navigate(`/question-banks/${targetId}`);
     }, 1500);
+  };
+
+  // Initiate commit process by first checking for duplicate questions in the target bank
+  const handleInitiateCommit = async (targetId: string) => {
+    if (!parseResult || parseResult.hasErrors || parseResult.questions.length === 0) {
+      return;
+    }
+
+    setGlobalError(null);
+    setIsCheckingDuplicates(true);
+
+    try {
+      const checkItems = parseResult.questions.map((q) => ({
+        prompt: q.prompt,
+        type: q.type,
+        options: q.options?.map((opt) => ({ text: opt.text, isCorrect: opt.isCorrect })),
+      }));
+
+      const checkRes = await checkDuplicatesMutation.mutateAsync({
+        bankId: targetId,
+        dto: { questions: checkItems },
+      });
+
+      if (checkRes.hasDuplicates && checkRes.duplicates.length > 0) {
+        setPendingTargetBankId(targetId);
+        setDuplicateMatches(checkRes.duplicates);
+        setIsDuplicateModalOpen(true);
+        setIsSelectBankModalOpen(false);
+        return;
+      }
+
+      // No duplicates found, commit all questions
+      await finalizeCommit(targetId, parseResult.questions);
+    } catch (err: unknown) {
+      const errorMsg =
+        err instanceof Error ? err.message : 'Có lỗi xảy ra khi kiểm tra câu hỏi trùng lặp';
+      setGlobalError(errorMsg);
+    } finally {
+      setIsCheckingDuplicates(false);
+    }
+  };
+
+  // Handle confirmation of exclusions from the duplicate questions modal
+  const handleConfirmDuplicateExclusions = async (excludedIndices: number[]) => {
+    if (!parseResult || !pendingTargetBankId) return;
+
+    const excludedSet = new Set(excludedIndices);
+    const remainingQuestions = parseResult.questions.filter((_, idx) => !excludedSet.has(idx));
+
+    if (remainingQuestions.length === 0) {
+      setIsDuplicateModalOpen(false);
+      setDuplicateMatches([]);
+      setPendingTargetBankId(null);
+      setGlobalError(
+        'Tất cả các câu hỏi trùng lặp đã được chọn loại bỏ. Không còn câu hỏi nào để thêm vào ngân hàng.',
+      );
+      return;
+    }
+
+    try {
+      await finalizeCommit(pendingTargetBankId, remainingQuestions);
+      setIsDuplicateModalOpen(false);
+      setDuplicateMatches([]);
+      setPendingTargetBankId(null);
+    } catch (err: unknown) {
+      const errorMsg =
+        err instanceof Error ? err.message : 'Có lỗi xảy ra khi lưu vào cơ sở dữ liệu';
+      setGlobalError(errorMsg);
+    }
   };
 
   // Helper formatting a single diagnostic item into text
@@ -213,14 +290,8 @@ export function MarkdownImportPage() {
       return;
     }
 
-    // Otherwise commit directly to existing bankId
-    try {
-      await executeCommit(bankId);
-    } catch (err: unknown) {
-      const errorMsg =
-        err instanceof Error ? err.message : 'Có lỗi xảy ra khi lưu vào cơ sở dữ liệu';
-      setGlobalError(errorMsg);
-    }
+    // Otherwise initiate duplicate check & commit to existing bankId
+    await handleInitiateCommit(bankId);
   };
 
   if (isBankLoading) {
@@ -231,7 +302,8 @@ export function MarkdownImportPage() {
   const errors = diagnostics.filter((d) => d.severity === 'ERROR');
   const warnings = diagnostics.filter((d) => d.severity === 'WARNING');
   const questions = parseResult?.questions || [];
-  const canCommit = !parseResult?.hasErrors && questions.length > 0 && !isCommitting;
+  const canCommit =
+    !parseResult?.hasErrors && questions.length > 0 && !isCommitting && !isCheckingDuplicates;
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)] p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
@@ -296,16 +368,24 @@ export function MarkdownImportPage() {
             className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm px-2.5 sm:px-3 text-xs sm:text-sm"
             title="Nhập vào ngân hàng"
           >
-            {isCommitting ? (
+            {isCommitting || isCheckingDuplicates ? (
               <LoadingSpinner size="sm" className="sm:mr-2" />
             ) : (
               <Check className="h-4 w-4 sm:mr-2" />
             )}
             <span className="hidden sm:inline">
-              Nhập {questions.length > 0 ? `${questions.length} câu ` : ''}vào ngân hàng
+              {isCheckingDuplicates
+                ? 'Đang kiểm tra trùng...'
+                : isCommitting
+                  ? 'Đang nhập...'
+                  : `Nhập ${questions.length > 0 ? `${questions.length} câu ` : ''}vào ngân hàng`}
             </span>
             <span className="sm:hidden">
-              Nhập {questions.length > 0 ? `(${questions.length})` : ''}
+              {isCheckingDuplicates
+                ? 'Đang kiểm tra...'
+                : isCommitting
+                  ? 'Đang nhập...'
+                  : `Nhập ${questions.length > 0 ? `(${questions.length})` : ''}`}
             </span>
           </Button>
         </div>
@@ -580,12 +660,28 @@ export function MarkdownImportPage() {
       <SelectTargetBankModal
         isOpen={isSelectBankModalOpen}
         onClose={() => setIsSelectBankModalOpen(false)}
-        onSelectAndCommit={executeCommit}
+        onSelectAndCommit={handleInitiateCommit}
         defaultTitle={parseResult?.title || ''}
         defaultDescription={parseResult?.description || ''}
         questionsCount={questions.length}
-        isCommitting={isCommitting}
+        isCommitting={isCommitting || isCheckingDuplicates}
       />
+
+      {isDuplicateModalOpen && (
+        <DuplicateQuestionsModal
+          isOpen={isDuplicateModalOpen}
+          onClose={() => {
+            setIsDuplicateModalOpen(false);
+            setDuplicateMatches([]);
+            setPendingTargetBankId(null);
+          }}
+          duplicates={duplicateMatches}
+          totalQuestionsCount={parseResult?.questions.length || 0}
+          bankTitle={bank?.title}
+          onConfirmExclusions={handleConfirmDuplicateExclusions}
+          isSubmitting={isCommitting}
+        />
+      )}
     </div>
   );
 }
@@ -596,7 +692,7 @@ export function MarkdownImportPage() {
 function QuestionPreviewCard({
   question: q,
   index,
-  showDifficulty = false,
+  showDifficulty = true,
 }: {
   question: ParsedQuestion;
   index: number;
@@ -654,10 +750,16 @@ function QuestionPreviewCard({
               {getTypeLabel(q.type)}
             </Badge>
             {showDifficulty && getDifficultyBadge(q.difficulty)}
+            {q.topic && (
+              <Badge
+                variant="secondary"
+                className="text-[10px] py-0 px-1.5 font-normal text-slate-600 dark:text-slate-300"
+              >
+                {q.topic}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center space-x-2 text-xs text-slate-500">
-            <span>{q.defaultPoints} điểm</span>
-            <span>•</span>
             <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
               Dòng {q.rawSourceLine}
             </span>
@@ -742,7 +844,7 @@ function QuestionPreviewCard({
                 <ul className="list-disc pl-4 mt-0.5 space-y-0.5">
                   {q.rubric.criteria.map((c, cIdx) => (
                     <li key={cIdx} className="text-slate-600 dark:text-slate-400">
-                      {c.description} ({c.points} điểm)
+                      {c.description}
                     </li>
                   ))}
                 </ul>

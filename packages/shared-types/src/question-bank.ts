@@ -135,3 +135,32 @@ export interface QuestionQueryDto {
   page?: number;
   limit?: number;
 }
+
+export interface DuplicateCheckItemDto {
+  prompt: string;
+  type?: QuestionType;
+  options?: Array<{ text: string; isCorrect?: boolean }>;
+}
+
+export interface CheckDuplicatesDto {
+  questions: DuplicateCheckItemDto[];
+  threshold?: number;
+}
+
+export interface DuplicateMatch {
+  newQuestionIndex: number;
+  newQuestionPrompt: string;
+  newQuestionType?: QuestionType;
+  existingQuestionId: string;
+  existingQuestionPrompt: string;
+  existingQuestionType?: QuestionType;
+  existingQuestionOptions?: Array<{ text: string; isCorrect: boolean }>;
+  similarity: number;
+}
+
+export interface CheckDuplicatesResult {
+  hasDuplicates: boolean;
+  totalChecked: number;
+  duplicateCount: number;
+  duplicates: DuplicateMatch[];
+}

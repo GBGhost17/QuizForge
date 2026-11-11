@@ -234,7 +234,7 @@ export function SelectTargetBankModal({
                             </Badge>
                           </div>
                           {bank.description && (
-                            <p className="text-[11px] text-slate-500 line-clamp-1">
+                            <p className="text-[11px] text-slate-500 line-clamp-2 whitespace-pre-line">
                               {bank.description}
                             </p>
                           )}

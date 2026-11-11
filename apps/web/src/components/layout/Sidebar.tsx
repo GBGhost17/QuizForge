@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   BookOpen,
   CheckCircle,
@@ -27,6 +27,13 @@ interface NavItem {
 export function Sidebar() {
   const { isAuthenticated } = useAuth();
   const { activeRole, isSidebarOpen, setSidebarOpen, setActiveRole } = useUIStore();
+  const navigate = useNavigate();
+
+  const handleRoleChange = (role: 'creator' | 'participant') => {
+    setActiveRole(role);
+    setSidebarOpen(false);
+    navigate('/');
+  };
 
   const creatorNavItems: NavItem[] = [
     { label: 'Tổng quan', to: '/', icon: <LayoutDashboard className="h-4 w-4" /> },
@@ -100,26 +107,30 @@ export function Sidebar() {
             <div className="grid grid-cols-2 gap-1.5 pt-2 mt-2 border-t border-slate-200/80">
               <button
                 type="button"
-                onClick={() => setActiveRole('creator')}
+                onClick={() => handleRoleChange('creator')}
                 className={cn(
                   'flex items-center justify-center space-x-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer',
                   activeRole === 'creator'
                     ? 'bg-indigo-600 text-white shadow-xs'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100',
                 )}
+                title="Chuyển sang không gian Soạn đề"
+                aria-label="Soạn đề"
               >
                 <BookOpen className="h-3 w-3" />
                 <span>Soạn đề</span>
               </button>
               <button
                 type="button"
-                onClick={() => setActiveRole('participant')}
+                onClick={() => handleRoleChange('participant')}
                 className={cn(
                   'flex items-center justify-center space-x-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer',
                   activeRole === 'participant'
                     ? 'bg-indigo-600 text-white shadow-xs'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100',
                 )}
+                title="Chuyển sang không gian Làm bài"
+                aria-label="Làm bài"
               >
                 <GraduationCap className="h-3 w-3" />
                 <span>Làm bài</span>

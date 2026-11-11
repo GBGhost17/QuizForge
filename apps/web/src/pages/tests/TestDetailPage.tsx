@@ -22,6 +22,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { MarkdownMathPreview } from '../../components/common/MarkdownMathPreview';
+import { ExpandableDescription } from '../../components/common/ExpandableDescription';
 import { QRCodeModal } from '../../components/tests/QRCodeModal';
 import type { QuestionOption } from '@quizforge/shared-types';
 
@@ -38,6 +39,7 @@ export function TestDetailPage() {
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+  const [publishWarning, setPublishWarning] = useState<string | null>(null);
 
   const publishMutation = usePublishTest();
   const closeMutation = useCloseTest();
@@ -81,9 +83,39 @@ export function TestDetailPage() {
     setTimeout(() => setCopiedType(null), 2000);
   };
 
+  const handleOpenPublishModal = () => {
+    if (snapshots.length === 0) {
+      alert('Đề thi phải có ít nhất 1 câu hỏi để xuất bản');
+      return;
+    }
+
+    // Kiểm tra chênh lệch điểm số với thang điểm (chuẩn 10 điểm)
+    const currentPoints = version?.totalPoints ?? snapshots.reduce((acc, s) => acc + s.points, 0);
+    const targetScale = 10;
+    const diff = Math.round(Math.abs(currentPoints - targetScale) * 100) / 100;
+
+    if (diff > 0.05) {
+      setPublishWarning(
+        `Tổng điểm các câu hỏi hiện tại (${currentPoints.toFixed(2)}đ) không khớp với thang điểm chuẩn (${targetScale}đ). Chênh lệch: ${diff.toFixed(2)}đ. Vui lòng bấm "Soạn đề" để điều chỉnh lại điểm câu hỏi hoặc chia đều trước khi xuất bản.`,
+      );
+      setIsPublishModalOpen(true);
+      return;
+    }
+
+    setPublishWarning(null);
+    setIsPublishModalOpen(true);
+  };
+
   const handlePublish = async () => {
     if (snapshots.length === 0) {
       alert('Đề thi phải có ít nhất 1 câu hỏi để xuất bản');
+      return;
+    }
+
+    const currentPoints = version?.totalPoints ?? snapshots.reduce((acc, s) => acc + s.points, 0);
+    const targetScale = 10;
+    const diff = Math.round(Math.abs(currentPoints - targetScale) * 100) / 100;
+    if (diff > 0.05) {
       return;
     }
 
@@ -136,7 +168,13 @@ export function TestDetailPage() {
             </Badge>
           </div>
           {test.description && (
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{test.description}</p>
+            <div className="mt-2 max-w-2xl">
+              <ExpandableDescription
+                content={test.description}
+                collapsedMaxHeight={72}
+                emptyText=""
+              />
+            </div>
           )}
         </div>
 
@@ -148,16 +186,22 @@ export function TestDetailPage() {
                 size="sm"
                 onClick={() => navigate(`/tests/${test.id}/edit`)}
                 className="flex items-center gap-1.5"
+                title="Soạn đề"
+                aria-label="Soạn đề"
               >
-                <Edit3 className="h-4 w-4" /> Soạn đề
+                <Edit3 className="h-4 w-4" />
+                <span className="hidden sm:inline">Soạn đề</span>
               </Button>
               <Button
                 size="sm"
-                onClick={() => setIsPublishModalOpen(true)}
+                onClick={handleOpenPublishModal}
                 disabled={snapshots.length === 0}
                 className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                title="Xuất bản đề thi"
+                aria-label="Xuất bản đề thi"
               >
-                <Send className="h-4 w-4" /> Xuất bản
+                <Send className="h-4 w-4" />
+                <span className="hidden sm:inline">Xuất bản</span>
               </Button>
             </>
           )}
@@ -169,8 +213,11 @@ export function TestDetailPage() {
                 size="sm"
                 onClick={() => setIsQRModalOpen(true)}
                 className="flex items-center gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/30"
+                title="Tạo mã QR"
+                aria-label="Tạo mã QR"
               >
-                <QrCode className="h-4 w-4" /> Tạo mã QR
+                <QrCode className="h-4 w-4" />
+                <span className="hidden sm:inline">Tạo mã QR</span>
               </Button>
 
               <Button
@@ -178,8 +225,11 @@ export function TestDetailPage() {
                 size="sm"
                 onClick={() => setIsCloseModalOpen(true)}
                 className="flex items-center gap-1.5"
+                title="Đóng bài kiểm tra"
+                aria-label="Đóng bài kiểm tra"
               >
-                <Ban className="h-4 w-4" /> Đóng bài kiểm tra
+                <Ban className="h-4 w-4" />
+                <span className="hidden sm:inline">Đóng bài kiểm tra</span>
               </Button>
             </>
           )}
@@ -225,22 +275,29 @@ export function TestDetailPage() {
                   type="button"
                   onClick={() => setIsQRModalOpen(true)}
                   className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  title="Tạo mã QR"
+                  aria-label="Tạo mã QR"
                 >
-                  <QrCode className="h-4 w-4" /> Tạo mã QR
+                  <QrCode className="h-4 w-4" />
+                  <span className="hidden sm:inline">Tạo mã QR</span>
                 </Button>
 
                 <Button
                   type="button"
                   onClick={handleCopyCode}
                   className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  title="Sao chép mã phòng thi"
+                  aria-label="Sao chép mã phòng thi"
                 >
                   {copiedType === 'code' ? (
                     <>
-                      <Check className="h-4 w-4" /> Đã chép mã
+                      <Check className="h-4 w-4" />
+                      <span className="hidden sm:inline">Đã chép mã</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="h-4 w-4" /> Sao chép mã
+                      <Copy className="h-4 w-4" />
+                      <span className="hidden sm:inline">Sao chép mã</span>
                     </>
                   )}
                 </Button>
@@ -250,14 +307,18 @@ export function TestDetailPage() {
                   variant="outline"
                   onClick={handleCopyLink}
                   className="flex items-center gap-1.5 border-emerald-300 bg-white hover:bg-emerald-50 dark:border-emerald-800 dark:bg-slate-900"
+                  title="Sao chép link vào thi"
+                  aria-label="Sao chép link vào thi"
                 >
                   {copiedType === 'link' ? (
                     <>
-                      <Check className="h-4 w-4 text-emerald-600" /> Đã chép link
+                      <Check className="h-4 w-4 text-emerald-600" />
+                      <span className="hidden sm:inline">Đã chép link</span>
                     </>
                   ) : (
                     <>
-                      <Share2 className="h-4 w-4" /> Sao chép link vào thi
+                      <Share2 className="h-4 w-4" />
+                      <span className="hidden sm:inline">Sao chép link vào thi</span>
                     </>
                   )}
                 </Button>
@@ -280,10 +341,10 @@ export function TestDetailPage() {
 
         <Card className="p-4">
           <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
-            <Sparkles className="h-4 w-4 text-amber-500" /> Tổng điểm
+            <Sparkles className="h-4 w-4 text-amber-500" /> Thang điểm
           </div>
           <div className="mt-2 text-xl font-bold text-slate-900 dark:text-white">
-            {version.totalPoints.toFixed(1)} điểm
+            {Math.round(version.totalPoints) || 10} điểm
           </div>
         </Card>
 
@@ -352,7 +413,7 @@ export function TestDetailPage() {
                       <Badge variant="outline">{snap.type}</Badge>
                     </div>
                     <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                      {snap.points} điểm
+                      {snap.points.toFixed(1)} điểm
                     </span>
                   </CardHeader>
 
@@ -419,34 +480,78 @@ export function TestDetailPage() {
         />
       )}
 
-      {/* Publish Confirmation Modal */}
+      {/* Publish Confirmation & Warning Modal */}
       {isPublishModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-900">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Xác nhận Xuất bản Đề thi
+              {publishWarning ? 'Cảnh báo chênh lệch điểm số' : 'Xác nhận Xuất bản Đề thi'}
             </h3>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-              Khi xuất bản, hệ thống sẽ{' '}
-              <strong>đóng băng toàn bộ {snapshots.length} câu hỏi</strong> vào bản ghi snapshot bất
-              biến và sinh mã phòng thi (Join Code) 6 ký tự để thí sinh tham gia.
-            </p>
-            <div className="mt-6 flex justify-end gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setIsPublishModalOpen(false)}
-                disabled={publishMutation.isPending}
-              >
-                Hủy
-              </Button>
-              <Button
-                onClick={handlePublish}
-                disabled={publishMutation.isPending}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
-                {publishMutation.isPending ? 'Đang xuất bản...' : 'Xác nhận xuất bản'}
-              </Button>
-            </div>
+
+            {publishWarning ? (
+              <div className="mt-3 space-y-3">
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+                  <p className="font-semibold mb-1">Không thể xuất bản đề thi:</p>
+                  <p>{publishWarning}</p>
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setIsPublishModalOpen(false);
+                      navigate(`/tests/${test.id}/edit`);
+                    }}
+                    className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    Đến trang Soạn đề để điều chỉnh
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsPublishModalOpen(false)}
+                    className="text-xs"
+                  >
+                    Đóng
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                  Khi xuất bản, hệ thống sẽ{' '}
+                  <strong>đóng băng toàn bộ {snapshots.length} câu hỏi</strong> vào bản ghi snapshot
+                  bất biến và sinh mã phòng thi (Join Code) 6 ký tự để thí sinh tham gia.
+                </p>
+                <div className="mt-4 rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800 dark:bg-emerald-950/30 dark:border-emerald-900/50 dark:text-emerald-300 space-y-1.5">
+                  <div className="flex items-center gap-1.5 font-semibold text-emerald-900 dark:text-emerald-200">
+                    <CheckCircle className="h-4 w-4 text-emerald-600" />
+                    <span>Điểm số hợp lệ và sẵn sàng xuất bản</span>
+                  </div>
+                  <div>
+                    • Số lượng: <strong>{snapshots.length}</strong> câu hỏi
+                  </div>
+                  <div>
+                    • Thang điểm bài thi: <strong>10</strong> điểm
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsPublishModalOpen(false)}
+                    disabled={publishMutation.isPending}
+                  >
+                    Hủy
+                  </Button>
+                  <Button
+                    onClick={handlePublish}
+                    disabled={publishMutation.isPending}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {publishMutation.isPending ? 'Đang xuất bản...' : 'Xác nhận xuất bản'}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

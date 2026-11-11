@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
 import { QUESTION_BANKS_QUERY_KEY } from './useQuestionBanks';
 import type {
+  CheckDuplicatesDto,
+  CheckDuplicatesResult,
   CreateQuestionDto,
   PaginatedResult,
   Question,
@@ -81,6 +83,24 @@ export function useDeleteQuestion(bankId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [...QUESTIONS_QUERY_KEY, bankId] });
       void queryClient.invalidateQueries({ queryKey: QUESTION_BANKS_QUERY_KEY });
+    },
+  });
+}
+
+export function useCheckDuplicates() {
+  return useMutation({
+    mutationFn: async ({
+      bankId,
+      dto,
+    }: {
+      bankId: string;
+      dto: CheckDuplicatesDto;
+    }): Promise<CheckDuplicatesResult> => {
+      const response = await apiClient.post<CheckDuplicatesResult>(
+        `/question-banks/${bankId}/questions/check-duplicates`,
+        dto,
+      );
+      return response.data;
     },
   });
 }

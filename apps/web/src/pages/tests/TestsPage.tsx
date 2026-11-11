@@ -98,11 +98,11 @@ export function TestsPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-slate-400" />
+          <Filter className="h-4 w-4 text-slate-400 shrink-0" />
           <select
             value={statusFilter || ''}
             onChange={(e) => setStatusFilter((e.target.value as TestStatus) || undefined)}
-            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            className="w-full sm:w-auto rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
             <option value="">Tất cả trạng thái</option>
             <option value="DRAFT">Bản nháp (DRAFT)</option>
@@ -267,8 +267,11 @@ export function TestsPage() {
                       size="sm"
                       onClick={() => navigate(`/tests/${test.id}`)}
                       className="text-xs"
+                      title="Xem chi tiết đề thi"
+                      aria-label="Chi tiết"
                     >
-                      <ExternalLink className="mr-1 h-3.5 w-3.5" /> Chi tiết
+                      <ExternalLink className="sm:mr-1 h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Chi tiết</span>
                     </Button>
                     {isDraft && (
                       <Button
@@ -276,8 +279,11 @@ export function TestsPage() {
                         size="sm"
                         onClick={() => navigate(`/tests/${test.id}/edit`)}
                         className="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+                        title="Soạn đề thi"
+                        aria-label="Soạn đề"
                       >
-                        <Edit3 className="mr-1 h-3.5 w-3.5" /> Soạn đề
+                        <Edit3 className="sm:mr-1 h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">Soạn đề</span>
                       </Button>
                     )}
                   </div>
@@ -287,6 +293,8 @@ export function TestsPage() {
                     size="sm"
                     onClick={() => setDeletingTest(test)}
                     className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
+                    title="Xóa đề thi"
+                    aria-label={`Xóa ${test.title}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

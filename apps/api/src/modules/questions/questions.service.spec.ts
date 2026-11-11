@@ -211,4 +211,62 @@ describe('QuestionsService', () => {
       expect(result.message).toMatch(/đã được lưu trữ/i);
     });
   });
+
+  describe('checkDuplicates', () => {
+    it('detects high-similarity questions in the targeted bank and flags duplicates', async () => {
+      mockPrisma.question.findMany.mockResolvedValueOnce([
+        {
+          id: 'existing-q1',
+          bankId: 'bank-1',
+          type: 'SINGLE_CHOICE',
+          prompt: 'My mother is in the kitchen. She is cooking dinner.',
+          options: [{ text: 'cooking', isCorrect: true }],
+        },
+      ]);
+
+      const result = await service.checkDuplicates('user-1', 'bank-1', {
+        questions: [
+          {
+            prompt: 'My mother is in the kitchen. She is cooking dinner.',
+            type: 'SINGLE_CHOICE',
+          },
+          {
+            prompt: 'Một tam giác có tổng ba góc là bao nhiêu?',
+            type: 'SINGLE_CHOICE',
+          },
+        ],
+      });
+
+      expect(result.hasDuplicates).toBe(true);
+      expect(result.duplicateCount).toBe(1);
+      expect(result.duplicates[0]?.newQuestionIndex).toBe(0);
+      expect(result.duplicates[0]?.existingQuestionId).toBe('existing-q1');
+      expect(result.duplicates[0]?.similarity).toBe(1.0);
+    });
+
+    it('returns hasDuplicates: false when candidate questions are unique', async () => {
+      mockPrisma.question.findMany.mockResolvedValueOnce([
+        {
+          id: 'existing-q1',
+          bankId: 'bank-1',
+          type: 'SINGLE_CHOICE',
+          prompt: 'My mother is in the kitchen. She is cooking dinner.',
+          options: [],
+        },
+      ]);
+
+      const result = await service.checkDuplicates('user-1', 'bank-1', {
+        questions: [
+          {
+            prompt: 'Giải phương trình bậc hai $ax^2 + bx + c = 0$',
+            type: 'SINGLE_CHOICE',
+          },
+        ],
+      });
+
+      expect(result.hasDuplicates).toBe(false);
+      expect(result.duplicateCount).toBe(0);
+      expect(result.duplicates).toHaveLength(0);
+    });
+  });
 });

@@ -24,6 +24,7 @@ import { Badge } from '../../components/ui/badge';
 import { EmptyState } from '../../components/common/EmptyState';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { MarkdownMathPreview } from '../../components/common/MarkdownMathPreview';
+import { ExpandableDescription } from '../../components/common/ExpandableDescription';
 import { QuestionEditorModal } from '../../components/questions/QuestionEditorModal';
 import type {
   CreateQuestionDto,
@@ -38,7 +39,7 @@ export function QuestionBankDetailPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<QuestionType | undefined>(undefined);
   const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | undefined>(undefined);
-  const [showDifficulty, setShowDifficulty] = useState(false);
+  const [showDifficulty, setShowDifficulty] = useState(true);
   const [page, setPage] = useState(1);
 
   // Modals
@@ -163,12 +164,14 @@ export function QuestionBankDetailPage() {
       {/* Header Banner */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-          <div className="space-y-1.5 max-w-2xl">
+          <div className="space-y-2 max-w-3xl flex-1 min-w-0">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">{bank.title}</h1>
-            <p className="text-sm text-slate-600">
-              {bank.description || 'Chưa có mô tả cho ngân hàng câu hỏi này.'}
-            </p>
-            <div className="flex items-center gap-2 pt-2">
+            <ExpandableDescription
+              content={bank.description}
+              collapsedMaxHeight={72}
+              emptyText="Chưa có mô tả cho ngân hàng câu hỏi này."
+            />
+            <div className="flex items-center gap-2 pt-1">
               <Badge variant="secondary">Tổng số: {questionsData?.meta.total ?? 0} câu hỏi</Badge>
               {bank.isArchived && <Badge variant="outline">Đã lưu trữ</Badge>}
             </div>
@@ -305,7 +308,6 @@ export function QuestionBankDetailPage() {
                   </span>
                   <Badge variant="outline">{getQuestionTypeLabel(q.type)}</Badge>
                   {showDifficulty && getDifficultyBadge(q.difficulty)}
-                  <Badge variant="secondary">{q.defaultPoints} điểm</Badge>
                   {q.topic && (
                     <span className="text-xs font-medium text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
                       {q.topic}
@@ -413,9 +415,7 @@ export function QuestionBankDetailPage() {
                         </span>
                         <ul className="list-disc list-inside mt-1 space-y-0.5 text-slate-600">
                           {q.rubric.criteria.map((c, cIdx) => (
-                            <li key={cIdx}>
-                              {c.description} ({c.points} điểm)
-                            </li>
+                            <li key={cIdx}>{c.description}</li>
                           ))}
                         </ul>
                       </div>
@@ -482,6 +482,7 @@ export function QuestionBankDetailPage() {
         onSubmit={handleSaveQuestion}
         questionToEdit={editingQuestion}
         isLoading={createQuestionMutation.isPending || updateQuestionMutation.isPending}
+        bankId={bankId}
       />
 
       {/* Modal: Delete Confirmation */}

@@ -114,9 +114,50 @@ describe('MarkdownParserService', () => {
 
     expect(result.hasErrors).toBe(false);
     expect(result.questions).toHaveLength(2);
-    expect(result.questions[0]?.prompt).toContain('Văn học Việt Nam thế kỷ XX');
+    expect(result.questions[0]?.topic).toBe('Văn học Việt Nam thế kỷ XX');
+    expect(result.questions[0]?.prompt).toContain('Tác phẩm "Số đỏ" của tác giả nào?');
     expect(result.questions[0]?.options?.find((o) => o.isCorrect)?.text).toBe('Vũ Trọng Phụng');
     expect(result.questions[1]?.prompt).toContain('\\int_0^1 x \\, dx = ?');
+  });
+
+  it('does not leak topic / category headers into question prompt when body has question content', async () => {
+    const md = `## Q1: Thì Hiện tại đơn và Hiện tại tiếp diễn
+> type: SINGLE_CHOICE
+> difficulty: EASY
+
+My mother is in the kitchen. She ______ dinner for the family at the moment.
+- [x] is cooking
+- [ ] cooks
+- [ ] cooked
+- [ ] has cooked
+
+## Q2
+> type: SINGLE_CHOICE
+> dạng bài: Câu điều kiện loại 1
+
+If it rains tomorrow, we ______ at home.
+- [x] will stay
+- [ ] stay
+- [ ] stayed
+- [ ] had stayed
+`;
+    const result = await service.parse(md);
+    expect(result.hasErrors).toBe(false);
+    expect(result.questions).toHaveLength(2);
+
+    // Q1: Heading had title "Thì Hiện tại đơn và Hiện tại tiếp diễn"
+    const q1 = result.questions[0];
+    expect(q1?.topic).toBe('Thì Hiện tại đơn và Hiện tại tiếp diễn');
+    expect(q1?.prompt).toBe(
+      'My mother is in the kitchen. She ______ dinner for the family at the moment.',
+    );
+    expect(q1?.prompt).not.toContain('Thì Hiện tại đơn');
+
+    // Q2: In-body metadata "dạng bài: Câu điều kiện loại 1"
+    const q2 = result.questions[1];
+    expect(q2?.topic).toBe('Câu điều kiện loại 1');
+    expect(q2?.prompt).toBe('If it rains tomorrow, we ______ at home.');
+    expect(q2?.prompt).not.toContain('dạng bài');
   });
 
   it('returns diagnostic when content is empty', async () => {

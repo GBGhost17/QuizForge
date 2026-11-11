@@ -171,7 +171,15 @@ describe('Tests & Test Builder Feature Integration (Stage S07)', () => {
       if (config.url === '/question-banks/bank-1/questions' && config.method === 'get') {
         return {
           data: {
-            data: [{ id: 'q-2', prompt: 'Hàm số đồng biến khi nào?', options: [] }],
+            data: [
+              {
+                id: 'q-2',
+                prompt: 'Hàm số đồng biến khi nào?',
+                type: 'SINGLE_CHOICE',
+                difficulty: 'EASY',
+                options: [],
+              },
+            ],
             meta: { page: 1, limit: 100, total: 1, totalPages: 1 },
           },
           status: 200,
@@ -258,6 +266,54 @@ describe('Tests & Test Builder Feature Integration (Stage S07)', () => {
       expect(await screen.findByDisplayValue('Đề thi thử Toán 12')).toBeTruthy();
       expect(await screen.findByText(/Giá trị của biểu thức 2 \+ 3 là bao nhiêu\?/i)).toBeTruthy();
       expect(screen.getByRole('button', { name: /Xuất bản đề thi/i })).toBeTruthy();
+    });
+
+    it('shows warning and blocks publishing when total points do not match target scale', async () => {
+      renderWithProviders(
+        <Routes>
+          <Route path="/tests/:id/edit" element={<TestEditorPage />} />
+        </Routes>,
+        ['/tests/test-1/edit'],
+      );
+
+      expect(await screen.findByDisplayValue('Đề thi thử Toán 12')).toBeTruthy();
+
+      // Thang điểm chuẩn mặc định là 10, nhưng test-1 chỉ có 1 câu 2.0 điểm
+      const publishBtn = screen.getByRole('button', { name: /Xuất bản đề thi/i });
+      fireEvent.click(publishBtn);
+
+      expect(await screen.findByText('Cảnh báo chênh lệch điểm số')).toBeTruthy();
+      expect(screen.getByText(/Không thể xuất bản đề thi/i)).toBeTruthy();
+      expect(screen.getAllByText(/Chênh lệch:/i).length).toBeGreaterThanOrEqual(1);
+
+      // Click nút tự động chia đều theo thang điểm
+      const autoDistributeBtn = screen.getByRole('button', {
+        name: /Tự động chia đều theo thang 10đ/i,
+      });
+      fireEvent.click(autoDistributeBtn);
+
+      // Modal cảnh báo đóng lại và điểm được chia thành 10đ
+      expect(
+        await screen.findByText(/Đã tự động cân bằng tròn đúng 10 điểm cho 1 câu/i),
+      ).toBeTruthy();
+    });
+
+    it('displays difficulty badges in QuestionPickerModal when selecting questions from bank', async () => {
+      renderWithProviders(
+        <Routes>
+          <Route path="/tests/:id/edit" element={<TestEditorPage />} />
+        </Routes>,
+        ['/tests/test-1/edit'],
+      );
+
+      expect(await screen.findByDisplayValue('Đề thi thử Toán 12')).toBeTruthy();
+
+      const addQuestionsBtn = screen.getByRole('button', { name: /Thêm câu hỏi từ ngân hàng/i });
+      fireEvent.click(addQuestionsBtn);
+
+      expect(await screen.findByText('Thêm câu hỏi từ ngân hàng')).toBeTruthy();
+      expect(await screen.findByText('Hàm số đồng biến khi nào?')).toBeTruthy();
+      expect(screen.getByTestId('difficulty-badge').textContent).toContain('Dễ');
     });
   });
 });

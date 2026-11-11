@@ -325,23 +325,44 @@ export class MarkdownParserService {
       // 5. Paragraph
       if (bodyNode.type === 'paragraph') {
         const text = this.extractTextFromNode(bodyNode).trim();
-        // Check if paragraph is single-line metadata like "Type: MULTIPLE_CHOICE"
+        // Check if paragraph is single-line metadata like "Type: MULTIPLE_CHOICE" or "Dạng bài: ..."
         if (this.isMetadataLine(text)) {
           this.parseMetadataLine(text, metadata);
         } else {
-          promptParagraphs.push(text);
+          // Check if paragraph is a genre/topic line like "[Dạng bài] ..." or "Dạng bài: ..."
+          const genreMatch = text.match(
+            /^\[?(?:dạng\s*(?:bài|toán)?|thể\s*loại|chủ\s*đề|topic)\]?[:：]\s*(.+)$/i,
+          );
+          if (genreMatch && genreMatch[1]) {
+            if (!metadata.topic) {
+              metadata.topic = genreMatch[1].trim();
+            }
+          } else {
+            promptParagraphs.push(text);
+          }
         }
       }
     }
 
-    // Build the full prompt: if promptTitle has content, combine with paragraphs
-    let fullPrompt = promptTitle;
+    // Build the full prompt:
+    // If promptParagraphs has content, that content is the genuine question prompt!
+    // Heading title (if any) represents the topic / category / title of the question.
+    let fullPrompt = '';
     if (promptParagraphs.length > 0) {
-      if (fullPrompt) {
-        fullPrompt = `${fullPrompt}\n\n${promptParagraphs.join('\n\n')}`;
-      } else {
-        fullPrompt = promptParagraphs.join('\n\n');
+      fullPrompt = promptParagraphs.join('\n\n').trim();
+
+      // If heading had a title/topic (e.g. "## Q1: Thì Hiện tại đơn và Hiện tại tiếp diễn")
+      // and topic was not explicitly specified in metadata, save heading title as topic
+      if (promptTitle && !metadata.topic) {
+        const cleanTopic = promptTitle
+          .replace(/^\[?(?:dạng\s*(?:bài|toán)?|thể\s*loại|chủ\s*đề|topic)\]?[:：]?\s*/i, '')
+          .replace(/^\[|\]$/g, '')
+          .trim();
+        metadata.topic = cleanTopic || promptTitle;
       }
+    } else {
+      // Body has no paragraphs (e.g. prompt was written directly on the heading line "## Q1: What is 2 + 2?")
+      fullPrompt = promptTitle;
     }
     fullPrompt = fullPrompt.trim();
 
@@ -627,7 +648,7 @@ export class MarkdownParserService {
   private isMetadataLine(line: string): boolean {
     const clean = line.replace(/^\*{1,2}|\*{1,2}$/g, '').trim();
     const match = clean.match(
-      /^(type|difficulty|points|defaultpoints|topic|tags|explanation|rubric|modelanswer|acceptedanswers|answer)\s*:\s*(.+)$/i,
+      /^(type|difficulty|points|defaultpoints|topic|tags|explanation|rubric|modelanswer|acceptedanswers|answer|chủ\s*đề|dạng\s*bài|dạng\s*toán|thể\s*loại)\s*[:：]\s*(.+)$/i,
     );
     return Boolean(match);
   }
@@ -638,11 +659,11 @@ export class MarkdownParserService {
   private parseMetadataLine(line: string, metadata: QuestionMetadata): void {
     const clean = line.replace(/^\*{1,2}|\*{1,2}$/g, '').trim();
     const match = clean.match(
-      /^(type|difficulty|points|defaultpoints|topic|tags|explanation|rubric|modelanswer|acceptedanswers|answer)\s*:\s*(.+)$/i,
+      /^(type|difficulty|points|defaultpoints|topic|tags|explanation|rubric|modelanswer|acceptedanswers|answer|chủ\s*đề|dạng\s*bài|dạng\s*toán|thể\s*loại)\s*[:：]\s*(.+)$/i,
     );
     if (!match) return;
 
-    const key = match[1]?.toLowerCase() ?? '';
+    const key = match[1]?.toLowerCase().replace(/\s+/g, '') ?? '';
     const val = match[2]?.trim() ?? '';
 
     switch (key) {
@@ -657,6 +678,12 @@ export class MarkdownParserService {
         metadata.points = parseFloat(val) || 1.0;
         break;
       case 'topic':
+      case 'chủđề':
+      case 'dạngbài':
+      case 'dạngtoán':
+      case 'thểloại':
+        metadata.topic = val;
+        break;
         metadata.topic = val;
         break;
       case 'tags':

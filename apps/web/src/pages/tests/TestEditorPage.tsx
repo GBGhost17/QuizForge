@@ -6,6 +6,7 @@ import {
   Check,
   CheckCircle,
   Eye,
+  HelpCircle,
   Plus,
   Save,
   Send,
@@ -51,6 +52,8 @@ export function TestEditorPage() {
 
   // Snapshot points inline edit state
   const [pointsMap, setPointsMap] = useState<Record<string, number>>({});
+  const [targetScale, setTargetScale] = useState<number>(10);
+  const [publishWarning, setPublishWarning] = useState<string | null>(null);
 
   // Modals
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -135,11 +138,41 @@ export function TestEditorPage() {
     }
   };
 
-  const handleAddQuestionsFromBank = async (questionIds: string[], defaultPoints: number) => {
+  const handleAddQuestionsFromBank = async (questionIds: string[]) => {
+    const totalCount = snapshots.length + questionIds.length;
+    if (totalCount === 0) return;
+
+    // Phân bổ chính xác tròn tổng = targetScale
+    const base = Math.floor((targetScale / totalCount) * 100) / 100;
+    let remainder = Math.round((targetScale - base * totalCount) * 100);
+
+    const updatedCurrentItems = snapshots.map((s, idx) => {
+      let add = 0;
+      if (remainder > 0) {
+        add = 0.01;
+        remainder--;
+      }
+      return {
+        snapshotId: s.id,
+        order: idx + 1,
+        points: Math.round((base + add) * 100) / 100,
+      };
+    });
+
+    // Điểm áp dụng cho các câu mới thêm
+    const newPerQuestionPoints = Math.round((base + (remainder > 0 ? 0.01 : 0)) * 100) / 100;
+
     await addBatchMutation.mutateAsync({
       testId: test.id,
-      dto: { questionIds, defaultPoints },
+      dto: { questionIds, defaultPoints: newPerQuestionPoints },
     });
+
+    if (snapshots.length > 0) {
+      await reorderMutation.mutateAsync({
+        testId: test.id,
+        dto: { items: updatedCurrentItems },
+      });
+    }
   };
 
   const handleRemoveQuestion = async (snapshotId: string) => {
@@ -148,6 +181,31 @@ export function TestEditorPage() {
       testId: test.id,
       snapshotId,
     });
+
+    const remainingCount = snapshots.length - 1;
+    if (remainingCount > 0) {
+      const base = Math.floor((targetScale / remainingCount) * 100) / 100;
+      let remainder = Math.round((targetScale - base * remainingCount) * 100);
+
+      const remainingSnaps = snapshots.filter((s) => s.id !== snapshotId);
+      const updatedItems = remainingSnaps.map((s, idx) => {
+        let add = 0;
+        if (remainder > 0) {
+          add = 0.01;
+          remainder--;
+        }
+        return {
+          snapshotId: s.id,
+          order: idx + 1,
+          points: Math.round((base + add) * 100) / 100,
+        };
+      });
+
+      await reorderMutation.mutateAsync({
+        testId: test.id,
+        dto: { items: updatedItems },
+      });
+    }
   };
 
   const handleMoveQuestion = async (index: number, direction: 'up' | 'down') => {
@@ -194,13 +252,70 @@ export function TestEditorPage() {
     setTimeout(() => setSaveSuccessMessage(null), 3000);
   };
 
+  const handleAutoDistributePoints = () => {
+    if (snapshots.length === 0 || targetScale <= 0) return;
+    const count = snapshots.length;
+    const base = Math.floor((targetScale / count) * 100) / 100;
+    let remainder = Math.round((targetScale - base * count) * 100);
+
+    const newMap: Record<string, number> = {};
+    snapshots.forEach((s) => {
+      let add = 0;
+      if (remainder > 0) {
+        add = 0.01;
+        remainder--;
+      }
+      newMap[s.id] = Math.round((base + add) * 100) / 100;
+    });
+
+    setPointsMap(newMap);
+    setSaveSuccessMessage(`Đã tự động cân bằng tròn đúng ${targetScale} điểm cho ${count} câu`);
+    setTimeout(() => setSaveSuccessMessage(null), 3000);
+  };
+
+  const handleOpenPublishModal = () => {
+    if (snapshots.length === 0) {
+      alert('Đề thi phải có ít nhất 1 câu hỏi để xuất bản');
+      return;
+    }
+
+    // Kiểm tra chênh lệch điểm số so với thang điểm đã cấu hình
+    const totalCurrent = snapshots.reduce((acc, s) => acc + (pointsMap[s.id] ?? s.points), 0);
+    const diff = Math.round(Math.abs(totalCurrent - targetScale) * 100) / 100;
+
+    if (diff > 0.05) {
+      setPublishWarning(
+        `Tổng điểm các câu hỏi hiện tại (${totalCurrent.toFixed(2)}đ) không khớp với thang điểm đề thi (${targetScale}đ). Chênh lệch: ${diff.toFixed(2)}đ. Vui lòng điều chỉnh lại điểm câu hỏi hoặc chia đều trước khi xuất bản.`,
+      );
+      setIsPublishModalOpen(true);
+      return;
+    }
+
+    setPublishWarning(null);
+    setIsPublishModalOpen(true);
+  };
+
   const handlePublish = async () => {
     if (snapshots.length === 0) {
       alert('Đề thi phải có ít nhất 1 câu hỏi để xuất bản');
       return;
     }
 
+    const totalCurrent = snapshots.reduce((acc, s) => acc + (pointsMap[s.id] ?? s.points), 0);
+    const diff = Math.round(Math.abs(totalCurrent - targetScale) * 100) / 100;
+    if (diff > 0.05) {
+      return;
+    }
+
     try {
+      // Trước khi publish, lưu lại điểm số chính xác nếu user có điều chỉnh
+      const items = snapshots.map((s, idx) => ({
+        snapshotId: s.id,
+        order: idx + 1,
+        points: pointsMap[s.id] ?? s.points,
+      }));
+      await reorderMutation.mutateAsync({ testId: test.id, dto: { items } });
+
       await publishMutation.mutateAsync({ testId: test.id });
       setIsPublishModalOpen(false);
       navigate(`/tests/${test.id}`);
@@ -236,18 +351,24 @@ export function TestEditorPage() {
             size="sm"
             onClick={() => navigate(`/tests/${test.id}`)}
             className="flex items-center gap-1.5"
+            title="Xem trước đề thi"
+            aria-label="Xem trước đề thi"
           >
-            <Eye className="h-4 w-4" /> Xem trước
+            <Eye className="h-4 w-4" />
+            <span className="hidden sm:inline">Xem trước</span>
           </Button>
 
           {!isPublished && (
             <Button
               size="sm"
-              onClick={() => setIsPublishModalOpen(true)}
+              onClick={handleOpenPublishModal}
               disabled={snapshots.length === 0}
               className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+              title="Xuất bản đề thi"
+              aria-label="Xuất bản đề thi"
             >
-              <Send className="h-4 w-4" /> Xuất bản đề thi
+              <Send className="h-4 w-4" />
+              <span className="hidden sm:inline">Xuất bản đề thi</span>
             </Button>
           )}
         </div>
@@ -344,6 +465,41 @@ export function TestEditorPage() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="cfg-pass">Điểm đạt</Label>
+                  <Input
+                    id="cfg-pass"
+                    type="number"
+                    step="0.5"
+                    min={0}
+                    disabled={isPublished}
+                    value={passScore ?? ''}
+                    onChange={(e) =>
+                      setPassScore(e.target.value ? Number(e.target.value) : undefined)
+                    }
+                    placeholder="VD: 5.0"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="cfg-scale">Thang điểm chuẩn</Label>
+                  <Input
+                    id="cfg-scale"
+                    type="number"
+                    step="1"
+                    min={1}
+                    max={1000}
+                    disabled={isPublished}
+                    value={targetScale}
+                    onChange={(e) => setTargetScale(Number(e.target.value) || 10)}
+                    placeholder="10"
+                    className="mt-1 font-semibold text-indigo-700 dark:text-indigo-300"
+                  />
+                </div>
+              </div>
+
               <div>
                 <Label htmlFor="cfg-release">Công bố kết quả</Label>
                 <select
@@ -421,16 +577,23 @@ export function TestEditorPage() {
                     onClick={handleSavePoints}
                     disabled={reorderMutation.isPending}
                     className="text-xs"
+                    title="Lưu điểm số"
+                    aria-label="Lưu điểm số"
                   >
-                    Lưu điểm số
+                    <Save className="h-3.5 w-3.5 sm:mr-1" />
+                    <span className="hidden sm:inline">Lưu điểm số</span>
                   </Button>
                 )}
                 <Button
                   size="sm"
                   onClick={() => setIsPickerOpen(true)}
                   className="flex items-center gap-1.5"
+                  title="Thêm câu hỏi từ ngân hàng"
+                  aria-label="Thêm câu hỏi từ ngân hàng"
                 >
-                  <Plus className="h-4 w-4" /> Thêm câu hỏi từ ngân hàng
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Thêm câu hỏi từ ngân hàng</span>
+                  <span className="sm:hidden">Thêm câu hỏi</span>
                 </Button>
               </div>
             )}
@@ -549,6 +712,20 @@ export function TestEditorPage() {
                           })}
                         </div>
                       )}
+
+                      {snap.explanation && (
+                        <div className="rounded-md bg-slate-50 p-2.5 text-xs text-slate-600 dark:bg-slate-800/60 dark:text-slate-300 flex items-start gap-2 mt-2">
+                          <HelpCircle className="h-4 w-4 text-indigo-500 shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                              Lời giải chi tiết:
+                            </span>
+                            <div className="mt-0.5">
+                              <MarkdownMathPreview content={snap.explanation} />
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );
@@ -569,39 +746,93 @@ export function TestEditorPage() {
         isLoading={addBatchMutation.isPending}
       />
 
-      {/* Publish Confirmation Modal */}
+      {/* Publish Confirmation & Warning Modal */}
       {isPublishModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-900">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Xác nhận Xuất bản Đề thi
+              {publishWarning ? 'Cảnh báo chênh lệch điểm số' : 'Xác nhận Xuất bản Đề thi'}
             </h3>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-              Khi xuất bản, hệ thống sẽ{' '}
-              <strong>đóng băng toàn bộ {snapshots.length} câu hỏi</strong> vào bản ghi snapshot bất
-              biến và sinh mã phòng thi (Join Code) 6 ký tự để thí sinh tham gia.
-            </p>
-            <div className="mt-4 rounded-lg bg-indigo-50 p-3 text-xs text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300">
-              Tổng số: <strong>{snapshots.length}</strong> câu • Tổng điểm:{' '}
-              <strong>{currentTotalPoints.toFixed(1)}</strong>
-            </div>
 
-            <div className="mt-6 flex justify-end gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setIsPublishModalOpen(false)}
-                disabled={publishMutation.isPending}
-              >
-                Hủy
-              </Button>
-              <Button
-                onClick={handlePublish}
-                disabled={publishMutation.isPending}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
-                {publishMutation.isPending ? 'Đang xuất bản...' : 'Xác nhận xuất bản'}
-              </Button>
-            </div>
+            {publishWarning ? (
+              <div className="mt-3 space-y-3">
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+                  <p className="font-semibold mb-1">Không thể xuất bản đề thi:</p>
+                  <p>{publishWarning}</p>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-2.5 text-xs text-slate-600 dark:bg-slate-800/40 dark:text-slate-300 space-y-1">
+                  <div>
+                    • Thang điểm chuẩn yêu cầu: <strong>{targetScale}đ</strong>
+                  </div>
+                  <div>
+                    • Tổng điểm câu hỏi hiện tại: <strong>{currentTotalPoints.toFixed(2)}đ</strong>
+                  </div>
+                  <div>
+                    • Chênh lệch:{' '}
+                    <strong className="text-red-600">
+                      {Math.abs(currentTotalPoints - targetScale).toFixed(2)}đ
+                    </strong>
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      handleAutoDistributePoints();
+                      setPublishWarning(null);
+                    }}
+                    className="text-xs border-indigo-200 text-indigo-700"
+                  >
+                    Tự động chia đều theo thang {targetScale}đ
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => setIsPublishModalOpen(false)}
+                    className="text-xs"
+                  >
+                    Đóng & Tự điều chỉnh
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                  Khi xuất bản, hệ thống sẽ{' '}
+                  <strong>đóng băng toàn bộ {snapshots.length} câu hỏi</strong> vào bản ghi snapshot
+                  bất biến và sinh mã phòng thi (Join Code) 6 ký tự để thí sinh tham gia.
+                </p>
+                <div className="mt-4 rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800 dark:bg-emerald-950/30 dark:border-emerald-900/50 dark:text-emerald-300 space-y-1.5">
+                  <div className="flex items-center gap-1.5 font-semibold text-emerald-900 dark:text-emerald-200">
+                    <CheckCircle className="h-4 w-4 text-emerald-600" />
+                    <span>Điểm số hợp lệ và sẵn sàng xuất bản</span>
+                  </div>
+                  <div>
+                    • Số lượng: <strong>{snapshots.length}</strong> câu hỏi
+                  </div>
+                  <div>
+                    • Thang điểm bài thi: <strong>{targetScale}</strong> điểm
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsPublishModalOpen(false)}
+                    disabled={publishMutation.isPending}
+                  >
+                    Hủy
+                  </Button>
+                  <Button
+                    onClick={handlePublish}
+                    disabled={publishMutation.isPending}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {publishMutation.isPending ? 'Đang xuất bản...' : 'Xác nhận xuất bản'}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -12,6 +12,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../../comp
 import { Badge } from '../../components/ui/badge';
 import { EmptyState } from '../../components/common/EmptyState';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { MarkdownMathPreview } from '../../components/common/MarkdownMathPreview';
 import { QuestionBankModal } from '../../components/question-banks/QuestionBankModal';
 import type { QuestionBank } from '@quizforge/shared-types';
 
@@ -177,9 +178,18 @@ export function QuestionBanksPage() {
                 </CardHeader>
 
                 <CardContent className="py-2 flex-1">
-                  <p className="text-sm text-slate-600 line-clamp-2 min-h-10">
-                    {bank.description || 'Chưa có mô tả chi tiết cho ngân hàng này.'}
-                  </p>
+                  {bank.description ? (
+                    <div className="text-sm text-slate-600 dark:text-slate-300 line-clamp-3 min-h-10">
+                      <MarkdownMathPreview
+                        content={bank.description}
+                        className="text-sm text-slate-600 dark:text-slate-300 line-clamp-3"
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-400 italic line-clamp-2 min-h-10">
+                      Chưa có mô tả chi tiết cho ngân hàng này.
+                    </p>
+                  )}
 
                   <div className="mt-4 flex items-center gap-2">
                     <Badge variant="secondary" className="flex items-center gap-1.5 py-1">
@@ -195,8 +205,12 @@ export function QuestionBanksPage() {
                     size="sm"
                     onClick={() => navigate(`/question-banks/${bank.id}`)}
                     className="flex-1 mr-2 font-medium"
+                    title="Xem danh sách câu hỏi"
+                    aria-label={`Xem câu hỏi ${bank.title}`}
                   >
-                    Xem câu hỏi
+                    <BookOpen className="h-4 w-4 sm:mr-1.5" />
+                    <span className="hidden sm:inline">Xem câu hỏi</span>
+                    <span className="sm:hidden">Chi tiết</span>
                   </Button>
 
                   <div className="flex items-center gap-1">
