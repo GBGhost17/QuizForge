@@ -481,6 +481,7 @@ export function QuestionBankDetailPage() {
         onSubmit={handleSaveQuestion}
         questionToEdit={editingQuestion}
         isLoading={createQuestionMutation.isPending || updateQuestionMutation.isPending}
+        bankId={bankId}
       />
 
       {/* Modal: Delete Confirmation */}

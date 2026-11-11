@@ -42,6 +42,12 @@ describe('QuestionsController', () => {
     findOne: jest.fn().mockResolvedValue(mockQuestion),
     update: jest.fn().mockResolvedValue({ ...mockQuestion, prompt: 'Updated?' }),
     delete: jest.fn().mockResolvedValue({ message: 'Success', isArchived: false }),
+    checkDuplicates: jest.fn().mockResolvedValue({
+      hasDuplicates: true,
+      totalChecked: 1,
+      duplicateCount: 1,
+      duplicates: [],
+    }),
   };
 
   beforeEach(async () => {
@@ -90,5 +96,14 @@ describe('QuestionsController', () => {
     const result = await controller.delete('user-1', 'q-1');
     expect(mockService.delete).toHaveBeenCalledWith('user-1', 'q-1');
     expect(result.message).toBe('Success');
+  });
+
+  it('delegates checkDuplicates to QuestionsService', async () => {
+    const dto = {
+      questions: [{ prompt: '2 + 2 = ?' }],
+    };
+    const result = await controller.checkDuplicates('user-1', 'bank-1', dto);
+    expect(mockService.checkDuplicates).toHaveBeenCalledWith('user-1', 'bank-1', dto);
+    expect(result.hasDuplicates).toBe(true);
   });
 });

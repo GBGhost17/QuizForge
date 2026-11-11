@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import { CreateQuestionSchema } from '@quizforge/validation';
 import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
 import { Alert, AlertDescription } from '../ui/alert';
 import { MarkdownMathPreview } from '../common/MarkdownMathPreview';
+import { useCheckDuplicates } from '../../hooks/useQuestions';
 import type {
   CreateQuestionDto,
   Difficulty,
+  DuplicateMatch,
   Question,
   QuestionType,
 } from '@quizforge/shared-types';
@@ -18,6 +21,7 @@ interface QuestionEditorModalProps {
   onSubmit: (data: CreateQuestionDto) => Promise<void>;
   questionToEdit?: Question | null;
   isLoading?: boolean;
+  bankId?: string;
 }
 
 export function QuestionEditorModal({
@@ -26,6 +30,7 @@ export function QuestionEditorModal({
   onSubmit,
   questionToEdit,
   isLoading,
+  bankId,
 }: QuestionEditorModalProps) {
   const [prompt, setPrompt] = useState('');
   const [type, setType] = useState<QuestionType>('SINGLE_CHOICE');
@@ -34,6 +39,11 @@ export function QuestionEditorModal({
   const [topic, setTopic] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [explanation, setExplanation] = useState('');
+
+  // Duplicate detection state
+  const [duplicateWarning, setDuplicateWarning] = useState<DuplicateMatch | null>(null);
+  const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
+  const checkDuplicatesMutation = useCheckDuplicates();
 
   // Options for choices
   const [options, setOptions] = useState<
@@ -111,6 +121,7 @@ export function QuestionEditorModal({
       setCriteria([]);
     }
     setError(null);
+    setDuplicateWarning(null);
   }, [questionToEdit, isOpen]);
 
   // When type changes, configure initial options
@@ -264,6 +275,94 @@ export function QuestionEditorModal({
       return;
     }
 
+    // Check for duplicates when creating a new question in a specific bank
+    if (bankId && !questionToEdit && !duplicateWarning) {
+      setIsCheckingDuplicates(true);
+      try {
+        const checkRes = await checkDuplicatesMutation.mutateAsync({
+          bankId,
+          dto: {
+            questions: [
+              {
+                prompt: payload.prompt,
+                type: payload.type,
+                options: payload.options?.map((opt) => ({
+                  text: opt.text,
+                  isCorrect: opt.isCorrect,
+                })),
+              },
+            ],
+          },
+        });
+
+        if (checkRes.hasDuplicates && checkRes.duplicates.length > 0 && checkRes.duplicates[0]) {
+          setDuplicateWarning(checkRes.duplicates[0]);
+          setIsCheckingDuplicates(false);
+          return;
+        }
+      } catch {
+        // Fallback: Proceed with submit if duplicate check endpoint errors out
+      } finally {
+        setIsCheckingDuplicates(false);
+      }
+    }
+
+    try {
+      await onSubmit(payload);
+      onClose();
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Có lỗi xảy ra khi lưu câu hỏi';
+      setError(message);
+    }
+  };
+
+  const handleDismissWarningAndSubmit = async () => {
+    setDuplicateWarning(null);
+    const tags = tagsInput
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    let finalOptions: Array<{ text: string; isCorrect: boolean; explanation?: string; order?: number }> = [];
+    let rubric: CreateQuestionDto['rubric'] = undefined;
+
+    if (type === 'SINGLE_CHOICE' || type === 'MULTIPLE_CHOICE' || type === 'TRUE_FALSE') {
+      finalOptions = options.map((opt, idx) => ({
+        ...opt,
+        order: idx,
+      }));
+    } else if (type === 'SHORT_ANSWER') {
+      const validAnswers = acceptedAnswers.map((a) => a.trim()).filter(Boolean);
+      finalOptions = validAnswers.map((ans, idx) => ({
+        text: ans,
+        isCorrect: true,
+        order: idx,
+      }));
+      rubric = {
+        acceptedAnswers: validAnswers,
+      };
+    } else if (type === 'ESSAY') {
+      finalOptions = [];
+      rubric = {
+        modelAnswer: modelAnswer.trim() || undefined,
+        criteria: criteria.filter((c) => c.description.trim().length > 0),
+      };
+    }
+
+    const payload: CreateQuestionDto = {
+      prompt,
+      type,
+      difficulty,
+      defaultPoints,
+      topic: topic.trim() || undefined,
+      tags,
+      explanation: explanation.trim() || undefined,
+      options: finalOptions,
+      rubric,
+    };
+
     try {
       await onSubmit(payload);
       onClose();
@@ -296,6 +395,72 @@ export function QuestionEditorModal({
           <Alert variant="error" className="mt-4 shrink-0">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
+        )}
+
+        {/* Duplicate warning notification with side-by-side comparison */}
+        {duplicateWarning && (
+          <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50/90 p-4 dark:border-amber-900/60 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 space-y-3 shrink-0">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-amber-950 dark:text-amber-100">
+                    Phát hiện câu hỏi có tỉ lệ trùng lặp cao
+                  </h3>
+                  <Badge
+                    variant="outline"
+                    className="text-xs bg-amber-100 text-amber-800 border-amber-300 font-semibold"
+                  >
+                    Độ tương đồng: {Math.round(duplicateWarning.similarity * 100)}%
+                  </Badge>
+                </div>
+                <p className="text-xs text-amber-800 dark:text-amber-300 mt-1">
+                  Nội dung câu hỏi bạn vừa nhập tương đồng cao với một câu hỏi đã có sẵn trong ngân
+                  hàng này. Vui lòng đối chiếu kỹ:
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div className="rounded-lg bg-white/90 p-3 border border-amber-200 dark:bg-slate-900/80 dark:border-slate-800 space-y-1.5">
+                <span className="font-semibold text-indigo-700 dark:text-indigo-400 block text-[11px]">
+                  Câu hỏi bạn đang soạn:
+                </span>
+                <div className="text-slate-900 dark:text-white font-medium">
+                  <MarkdownMathPreview content={prompt} />
+                </div>
+              </div>
+              <div className="rounded-lg bg-white/90 p-3 border border-amber-200 dark:bg-slate-900/80 dark:border-slate-800 space-y-1.5">
+                <span className="font-semibold text-emerald-700 dark:text-emerald-400 block text-[11px]">
+                  Câu hỏi đã có sẵn trong ngân hàng:
+                </span>
+                <div className="text-slate-900 dark:text-white font-medium">
+                  <MarkdownMathPreview content={duplicateWarning.existingQuestionPrompt} />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-2 pt-1 border-t border-amber-200/60 dark:border-amber-900/40">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDuplicateWarning(null)}
+                className="text-xs border-amber-300 hover:bg-amber-100"
+              >
+                Loại bỏ & Chỉnh sửa lại nội dung
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleDismissWarningAndSubmit}
+                className="text-xs bg-amber-600 hover:bg-amber-700 text-white"
+                isLoading={isLoading}
+              >
+                Bỏ qua cảnh báo & Vẫn lưu câu này
+              </Button>
+            </div>
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4 overflow-y-auto pr-2 flex-1">
@@ -604,11 +769,25 @@ export function QuestionEditorModal({
           </div>
 
           <div className="pt-4 border-t border-slate-100 flex justify-end gap-3 shrink-0">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading || isCheckingDuplicates}
+            >
               Hủy
             </Button>
-            <Button type="submit" variant="primary" isLoading={isLoading}>
-              {questionToEdit ? 'Lưu câu hỏi' : 'Tạo câu hỏi'}
+            <Button
+              type="submit"
+              variant="primary"
+              isLoading={isLoading || isCheckingDuplicates}
+              disabled={isLoading || isCheckingDuplicates}
+            >
+              {isCheckingDuplicates
+                ? 'Đang kiểm tra trùng...'
+                : questionToEdit
+                  ? 'Lưu câu hỏi'
+                  : 'Tạo câu hỏi'}
             </Button>
           </div>
         </form>

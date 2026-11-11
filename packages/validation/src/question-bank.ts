@@ -208,3 +208,25 @@ export const QuestionQuerySchema = z.object({
 });
 
 export type QuestionQueryInput = z.infer<typeof QuestionQuerySchema>;
+
+export const DuplicateCheckItemSchema = z.object({
+  prompt: z.string().trim().min(1, 'Nội dung câu hỏi không được để trống'),
+  type: QuestionTypeEnum.optional(),
+  options: z
+    .array(
+      z.object({
+        text: z.string(),
+        isCorrect: z.boolean().optional(),
+      }),
+    )
+    .optional(),
+});
+
+export const CheckDuplicatesSchema = z.object({
+  questions: z
+    .array(DuplicateCheckItemSchema)
+    .min(1, 'Danh sách câu hỏi cần kiểm tra không được rỗng'),
+  threshold: z.number().min(0.1).max(1.0).optional().default(0.85),
+});
+
+export type CheckDuplicatesInput = z.infer<typeof CheckDuplicatesSchema>;

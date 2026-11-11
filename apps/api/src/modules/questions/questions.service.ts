@@ -5,9 +5,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateQuestionDto, QuestionQueryDto, UpdateQuestionDto } from './dto';
+import { CheckDuplicatesDto, CreateQuestionDto, QuestionQueryDto, UpdateQuestionDto } from './dto';
 import { CreateQuestionSchema, UpdateQuestionSchema } from '@quizforge/validation';
-import type { PaginatedResult, Question, QuestionOption } from '@quizforge/shared-types';
+import { calculateQuestionSimilarity } from './utils/similarity.util';
+import type {
+  CheckDuplicatesResult,
+  DuplicateMatch,
+  PaginatedResult,
+  Question,
+  QuestionOption,
+  QuestionType,
+} from '@quizforge/shared-types';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -322,6 +330,82 @@ export class QuestionsService {
         order: opt.order,
         createdAt: opt.createdAt.toISOString(),
       })),
+    };
+  }
+
+  /**
+   * Compares an array of candidate questions against existing questions in the target question bank.
+   * Identifies any questions that have a high probability of duplication (similarity >= threshold).
+   * Strictly evaluates within the specified bankId only.
+   */
+  async checkDuplicates(
+    userId: string,
+    bankId: string,
+    dto: CheckDuplicatesDto,
+  ): Promise<CheckDuplicatesResult> {
+    await this.verifyBankOwnership(userId, bankId);
+
+    const threshold = dto.threshold ?? 0.85;
+
+    // Fetch existing questions strictly within the specified question bank
+    const existingQuestions = await this.prisma.question.findMany({
+      where: {
+        bankId,
+        isArchived: false,
+      },
+      include: {
+        options: {
+          orderBy: { order: 'asc' },
+        },
+      },
+    });
+
+    if (existingQuestions.length === 0 || !dto.questions || dto.questions.length === 0) {
+      return {
+        hasDuplicates: false,
+        totalChecked: dto.questions?.length ?? 0,
+        duplicateCount: 0,
+        duplicates: [],
+      };
+    }
+
+    const duplicates: DuplicateMatch[] = [];
+
+    // Compare each incoming candidate against existing questions in the bank
+    dto.questions.forEach((candidate, index) => {
+      let highestSimilarity = 0;
+      let matchedExisting: (typeof existingQuestions)[0] | null = null;
+
+      for (const existing of existingQuestions) {
+        const similarity = calculateQuestionSimilarity(candidate, existing);
+        if (similarity > highestSimilarity) {
+          highestSimilarity = similarity;
+          matchedExisting = existing;
+        }
+      }
+
+      if (highestSimilarity >= threshold && matchedExisting) {
+        duplicates.push({
+          newQuestionIndex: index,
+          newQuestionPrompt: candidate.prompt,
+          newQuestionType: candidate.type,
+          existingQuestionId: matchedExisting.id,
+          existingQuestionPrompt: matchedExisting.prompt,
+          existingQuestionType: matchedExisting.type as QuestionType,
+          existingQuestionOptions: matchedExisting.options.map((o) => ({
+            text: o.text,
+            isCorrect: o.isCorrect,
+          })),
+          similarity: highestSimilarity,
+        });
+      }
+    });
+
+    return {
+      hasDuplicates: duplicates.length > 0,
+      totalChecked: dto.questions.length,
+      duplicateCount: duplicates.length,
+      duplicates,
     };
   }
 }

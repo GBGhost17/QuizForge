@@ -22,10 +22,15 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { QuestionsService } from './questions.service';
-import { CreateQuestionDto, QuestionQueryDto, UpdateQuestionDto } from './dto';
+import {
+  CheckDuplicatesDto,
+  CreateQuestionDto,
+  QuestionQueryDto,
+  UpdateQuestionDto,
+} from './dto';
 import { CurrentUser } from '../auth/decorators';
 import { JwtAuthGuard } from '../auth/guards';
-import type { PaginatedResult, Question } from '@quizforge/shared-types';
+import type { CheckDuplicatesResult, PaginatedResult, Question } from '@quizforge/shared-types';
 
 @ApiTags('questions')
 @ApiBearerAuth()
@@ -47,6 +52,23 @@ export class QuestionsController {
     @Body() dto: CreateQuestionDto,
   ): Promise<Question> {
     return this.questionsService.create(userId, bankId, dto);
+  }
+
+  @Post('question-banks/:bankId/questions/check-duplicates')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Kiểm tra tỷ lệ trùng lặp của danh sách câu hỏi với các câu hỏi đã có trong ngân hàng',
+  })
+  @ApiOkResponse({ description: 'Kết quả đối chiếu trùng lặp' })
+  @ApiUnauthorizedResponse({ description: 'Chưa xác thực' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy ngân hàng câu hỏi' })
+  @ApiForbiddenResponse({ description: 'Không có quyền truy cập ngân hàng câu hỏi' })
+  async checkDuplicates(
+    @CurrentUser('id') userId: string,
+    @Param('bankId') bankId: string,
+    @Body() dto: CheckDuplicatesDto,
+  ): Promise<CheckDuplicatesResult> {
+    return this.questionsService.checkDuplicates(userId, bankId, dto);
   }
 
   @Get('question-banks/:bankId/questions')
