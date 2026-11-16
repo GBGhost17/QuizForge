@@ -15,6 +15,10 @@ import { MarkdownImportPage } from '../pages/import/MarkdownImportPage';
 import { TestsPage } from '../pages/tests/TestsPage';
 import { TestEditorPage } from '../pages/tests/TestEditorPage';
 import { TestDetailPage } from '../pages/tests/TestDetailPage';
+import { JoinSessionPage } from '../pages/attempts/JoinSessionPage';
+import { TakeTestPage } from '../pages/attempts/TakeTestPage';
+import { AttemptSubmittedPage } from '../pages/attempts/AttemptSubmittedPage';
+import { AttemptsHistoryPage } from '../pages/attempts/AttemptsHistoryPage';
 
 export const router = createBrowserRouter([
   {
@@ -129,13 +133,29 @@ export const router = createBrowserRouter([
       // Participant Routes
       {
         path: 'join',
-        element: <PlaceholderPage title="Vào thi bằng mã phòng" />,
+        element: <JoinSessionPage />,
+      },
+      {
+        path: 'take-test/:attemptId',
+        element: (
+          <ProtectedRoute>
+            <TakeTestPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'attempts/:attemptId/submitted',
+        element: (
+          <ProtectedRoute>
+            <AttemptSubmittedPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'attempts',
         element: (
           <ProtectedRoute>
-            <PlaceholderPage title="Lịch sử bài làm" />
+            <AttemptsHistoryPage />
           </ProtectedRoute>
         ),
       },

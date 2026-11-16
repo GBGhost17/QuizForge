@@ -18,8 +18,8 @@ export function CreateTestModal({ isOpen, onClose, onSubmit, isLoading }: Create
   const [mode, setMode] = useState<TestMode>('ASSIGNMENT');
   const [timeLimitMinutes, setTimeLimitMinutes] = useState<number | undefined>(45);
   const [maxAttempts, setMaxAttempts] = useState<number>(1);
-  const [shuffleQuestions, setShuffleQuestions] = useState(false);
-  const [shuffleOptions, setShuffleOptions] = useState(false);
+  const [shuffleQuestions, setShuffleQuestions] = useState(true);
+  const [shuffleOptions, setShuffleOptions] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;

@@ -30,8 +30,8 @@ export const CreateTestSchema = z.object({
     .min(1, 'Số lần làm bài tối thiểu là 1')
     .max(100, 'Số lần làm bài tối đa là 100')
     .default(1),
-  shuffleQuestions: z.boolean().default(false),
-  shuffleOptions: z.boolean().default(false),
+  shuffleQuestions: z.boolean().default(true),
+  shuffleOptions: z.boolean().default(true),
   releaseMode: ResultReleaseModeSchema.default('ON_FINALIZATION'),
   passScore: z.number().min(0, 'Điểm đạt không được nhỏ hơn 0').nullable().optional(),
 });

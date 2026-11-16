@@ -45,8 +45,8 @@ export function TestEditorPage() {
   const [mode, setMode] = useState<TestMode>('ASSIGNMENT');
   const [timeLimitMinutes, setTimeLimitMinutes] = useState<number | undefined>(undefined);
   const [maxAttempts, setMaxAttempts] = useState<number>(1);
-  const [shuffleQuestions, setShuffleQuestions] = useState(false);
-  const [shuffleOptions, setShuffleOptions] = useState(false);
+  const [shuffleQuestions, setShuffleQuestions] = useState(true);
+  const [shuffleOptions, setShuffleOptions] = useState(true);
   const [releaseMode, setReleaseMode] = useState<ResultReleaseMode>('ON_FINALIZATION');
   const [passScore, setPassScore] = useState<number | undefined>(undefined);
 
@@ -76,8 +76,8 @@ export function TestEditorPage() {
       setMode(test.mode || 'ASSIGNMENT');
       setTimeLimitMinutes(version.timeLimitMinutes ?? undefined);
       setMaxAttempts(version.maxAttempts ?? 1);
-      setShuffleQuestions(version.shuffleQuestions ?? false);
-      setShuffleOptions(version.shuffleOptions ?? false);
+      setShuffleQuestions(version.shuffleQuestions ?? true);
+      setShuffleOptions(version.shuffleOptions ?? true);
       setReleaseMode(version.releaseMode || 'ON_FINALIZATION');
       setPassScore(version.passScore ?? undefined);
 
@@ -316,7 +316,26 @@ export function TestEditorPage() {
       }));
       await reorderMutation.mutateAsync({ testId: test.id, dto: { items } });
 
-      await publishMutation.mutateAsync({ testId: test.id });
+      // Cập nhật cấu hình hiện tại trước khi xuất bản
+      await updateMutation.mutateAsync({
+        id: test.id,
+        dto: {
+          title: title.trim(),
+          description: description.trim() || undefined,
+          instructions: instructions.trim() || undefined,
+          mode,
+          timeLimitMinutes: timeLimitMinutes ? Number(timeLimitMinutes) : undefined,
+          maxAttempts: Number(maxAttempts) || 1,
+          shuffleQuestions,
+          shuffleOptions,
+          releaseMode,
+          passScore: passScore !== undefined ? Number(passScore) : undefined,
+        },
+      });
+
+      await publishMutation.mutateAsync({
+        testId: test.id,
+      });
       setIsPublishModalOpen(false);
       navigate(`/tests/${test.id}`);
     } catch (err: unknown) {
