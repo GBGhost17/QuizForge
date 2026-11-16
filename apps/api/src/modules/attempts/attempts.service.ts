@@ -187,18 +187,24 @@ export class AttemptsService {
       : null;
 
     // 3. Xử lý xáo trộn câu hỏi và đáp án
+    // Luôn xáo trộn thứ tự câu hỏi và phương án trắc nghiệm cho mỗi lượt làm bài (attempt)
+    // để đảm bảo tính công bằng và chống gian lận (tránh đáp án đúng luôn rơi vào lựa chọn A)
     const snapshots = [...session.version.questionSnapshots];
-    if (session.version.shuffleQuestions) {
+    if (snapshots.length > 1) {
       this.shuffleArray(snapshots);
     }
 
     const questionOrderItems = snapshots.map((snapshot) => {
       let shuffledOptionIds: string[] | null = null;
-      if (session.version.shuffleOptions && Array.isArray(snapshot.options)) {
-        const rawOpts = snapshot.options as Array<{ id: string }>;
+      if (
+        Array.isArray(snapshot.options) &&
+        snapshot.options.length > 1 &&
+        (snapshot.type === 'SINGLE_CHOICE' || snapshot.type === 'MULTIPLE_CHOICE')
+      ) {
+        const rawOpts = snapshot.options as Array<{ id?: string; text?: string }>;
         const optsCopy = [...rawOpts];
         this.shuffleArray(optsCopy);
-        shuffledOptionIds = optsCopy.map((o) => String(o.id));
+        shuffledOptionIds = optsCopy.map((o, idx) => String(o.id ?? `opt-${idx}`));
       }
       return {
         snapshotId: snapshot.id,
@@ -281,21 +287,45 @@ export class AttemptsService {
       }
 
       // Nếu có thứ tự xáo trộn phương án đã lưu, sắp xếp lại theo danh sách ID
+      let orderList: string[] | null = null;
       if (Array.isArray(qo.shuffledOptionIds)) {
-        const orderList = qo.shuffledOptionIds as string[];
-        const optMap = new Map(rawOptions.map((o) => [String(o.id), o]));
+        orderList = qo.shuffledOptionIds as string[];
+      } else if (typeof qo.shuffledOptionIds === 'string') {
+        try {
+          const parsed = JSON.parse(qo.shuffledOptionIds);
+          if (Array.isArray(parsed)) {
+            orderList = parsed as string[];
+          }
+        } catch {
+          orderList = null;
+        }
+      }
+
+      if (orderList && orderList.length > 0) {
+        const optMap = new Map(rawOptions.map((o, idx) => [String(o.id ?? `opt-${idx}`), o]));
         const sorted: typeof rawOptions = [];
         for (const optId of orderList) {
           const found = optMap.get(String(optId));
           if (found) sorted.push(found);
         }
-        // Thêm bất kỳ phương án nào chưa có trong orderList (phòng ngừa dữ liệu cũ)
-        for (const opt of rawOptions) {
-          if (!orderList.includes(String(opt.id))) {
-            sorted.push(opt);
+        for (let idx = 0; idx < rawOptions.length; idx++) {
+          const opt = rawOptions[idx];
+          if (opt) {
+            const optKey = String(opt.id ?? `opt-${idx}`);
+            if (!orderList.includes(optKey) && !sorted.includes(opt)) {
+              sorted.push(opt);
+            }
           }
         }
         rawOptions = sorted;
+      } else if (
+        rawOptions.length > 1 &&
+        (snapshot.type === 'SINGLE_CHOICE' || snapshot.type === 'MULTIPLE_CHOICE')
+      ) {
+        // Fallback: nếu bài làm cũ chưa có shuffledOptionIds đã lưu, xáo trộn trực tiếp để không bị cố định đáp án A
+        const optsCopy = [...rawOptions];
+        this.shuffleArray(optsCopy);
+        rawOptions = optsCopy;
       }
 
       // Khử trùng tuyệt đối: CHỈ trả về id, text, order. KHÔNG BAO GIỜ gửi isCorrect hay explanation!

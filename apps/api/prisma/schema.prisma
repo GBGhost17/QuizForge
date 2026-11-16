@@ -220,8 +220,8 @@ model TestVersion {
   instructions     String?           @db.Text
   timeLimitMinutes Int?
   maxAttempts      Int               @default(1)
-  shuffleQuestions Boolean           @default(false)
-  shuffleOptions   Boolean           @default(false)
+  shuffleQuestions Boolean           @default(true)
+  shuffleOptions   Boolean           @default(true)
   releaseMode      ResultReleaseMode @default(ON_FINALIZATION)
   passScore        Float?
   totalPoints      Float             @default(0.0)

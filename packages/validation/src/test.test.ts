@@ -20,8 +20,8 @@ describe('Test Validation Schemas (Stage S07)', () => {
         expect(res.data.title).toBe('Đề kiểm tra 1 tiết Toán Đại số');
         expect(res.data.mode).toBe('ASSIGNMENT');
         expect(res.data.maxAttempts).toBe(1);
-        expect(res.data.shuffleQuestions).toBe(false);
-        expect(res.data.shuffleOptions).toBe(false);
+        expect(res.data.shuffleQuestions).toBe(true);
+        expect(res.data.shuffleOptions).toBe(true);
         expect(res.data.releaseMode).toBe('ON_FINALIZATION');
       }
     });
